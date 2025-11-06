@@ -1,0 +1,63 @@
+[build-system]
+build-backend = "uv_build"
+requires = ["uv_build"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "ruff>=0.14.3",
+    "uv-build",
+]
+
+[project]
+authors = [{name = "Steve Jibson", email = "steve@jibson.com"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+]
+description = "Run local checks; push results to Uptime Kuma"
+dependencies = []
+name = "kumacub"
+readme = "README.md"
+requires-python = "==3.13.*"
+version = "0.1.0"
+
+[project.scripts]
+kumacub = "kumacub:main"
+
+[project.urls]
+Homepage = "https://github.com/toadstule/kumacub"
+Documentation = "https://github.com/toadstule/kumacub/README.md"
+Issues = "https://github.com/toadstule/kumacub/issues"
+
+[tool.mypy]
+ignore_missing_imports = true
+implicit_reexport = true
+install_types = true
+non_interactive = true
+pretty = true
+strict = true
+
+[tool.ruff]
+line-length = 120  # Mainly due to the additional length caused by type hinting.
+
+[tool.ruff.lint]
+ignore = [
+    "COM812",  # This gets upset when there isn't a trailing comma in a multi-line split string.
+               # The formatter will add/verify the trailing commas.
+    "T201",    # This check prevents the use of print() -- which would be fine for non-interactive programs.
+]
+select = [
+    "ALL",   # All the checks.
+    "D401",  # Use imparative mood for comments. The "google" pydocstyle convention disables this, so we'll re-enable it.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    "S101",    # Allow tests to use assert statements.
+    "SLF001",  # Allow tests to access private members.
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
