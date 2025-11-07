@@ -60,14 +60,14 @@ class FakeAuthSvc(auth_svc.AuthSvcP):
     def extract_claims(self, token: str | None) -> auth_svc.Claims:
         """Return claims or raise KumaCubAuthInvalidTokenError for bad/missing tokens."""
         if not self._settings.auth.required:
-            return auth_svc.Claims(iss="my-api", aud="my-api", exp=0, sub="anonymous")
+            return auth_svc.Claims(iss="kumacub", aud="kumacub", exp=0, sub="anonymous")
         # Treat None, empty, or whitespace-only tokens as missing
         if token is None or (isinstance(token, str) and not token.strip()):
             raise auth_svc.KumaCubAuthInvalidTokenError
         if "invalid_token" in self._raise_on:
             raise auth_svc.KumaCubAuthInvalidTokenError
         # Return valid claims for authenticated user
-        return auth_svc.Claims(iss="my-api", aud="my-api", exp=9999999999, sub="user")
+        return auth_svc.Claims(iss="kumacub", aud="kumacub", exp=9999999999, sub="user")
 
     def refresh_token(self, token: str) -> auth_svc.Token:
         """Return a refreshed token or raise based on configured conditions."""
@@ -95,7 +95,7 @@ class FakeAuthSvc(auth_svc.AuthSvcP):
             raise auth_svc.KumaCubAuthIssuerNotAllowedError
         if "invalid_token" in self._raise_on:
             raise auth_svc.KumaCubAuthInvalidTokenError
-        return auth_svc.Claims(iss="my-api", aud="my-api", exp=9999999999, sub="user")
+        return auth_svc.Claims(iss="kumacub", aud="kumacub", exp=9999999999, sub="user")
 
 
 @pytest.fixture

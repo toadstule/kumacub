@@ -7,7 +7,7 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""API package containing FastAPI routers and response models for KubeCub.
+"""API package containing FastAPI routers and response models for KumaCub.
 
 Routers are aggregated under the `/api` prefix. Add versioned routers under `/api/vN/` and include them here.
 """

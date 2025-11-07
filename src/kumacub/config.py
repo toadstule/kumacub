@@ -67,11 +67,11 @@ class Settings(pydantic_settings.BaseSettings):
     model_config = pydantic_settings.SettingsConfigDict(
         env_nested_delimiter="__",
         extra="ignore",
-        toml_file=os.environ.get("CONFIG", "/etc/my-api/config.toml"),
+        toml_file=os.environ.get("CONFIG", "/etc/kumacub/config.toml"),
     )
 
     # App identity
-    service_name: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "my-api"
+    service_name: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "kumacub"
 
     # HTTP auth/jwt configuration
     auth: AuthSettings = AuthSettings()
