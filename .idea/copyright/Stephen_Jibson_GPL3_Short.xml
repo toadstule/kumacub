@@ -1,0 +1,7 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="allowReplaceRegexp" value="(?s)^#\s*Copyright.*GPL-3.0-only.*?(?:\R#\R)?" />
+    <option name="notice" value="KumaCub - Run local checks; push results to Uptime Kuma.&#10;Copyright (C) &amp;#36;originalComment.match(&quot;Copyright \(C\) (\d+)&quot;, 1, &quot;-&quot;, &quot;&amp;#36;today.year&quot;)&amp;#36;today.year Stephen Jibson.&#10;SPDX-License-Identifier: GPL-3.0-only" />
+    <option name="myName" value="Stephen Jibson GPL3 Short" />
+  </copyright>
+</component>
