@@ -7,4 +7,14 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""KumaCub."""
+"""Version 1 API routers for KumaCub."""
+
+import fastapi
+
+from kumacub.api.v1 import auth, health, sample
+
+router = fastapi.APIRouter(prefix="/v1")
+router.include_router(auth.router)
+router.include_router(health.router)
+# TODO: Remove the sample router include and add your own API routes.
+router.include_router(sample.router)

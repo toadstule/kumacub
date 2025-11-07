@@ -1,4 +1,3 @@
-
 #  KumaCub - Run local checks; push results to Uptime Kuma.
 #  Copyright (c) 2025.
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
@@ -8,4 +7,4 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Uptime Kuma Service."""
+"""KumaCub services."""

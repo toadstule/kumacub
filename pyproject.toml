@@ -5,7 +5,12 @@ requires = ["uv_build"]
 [dependency-groups]
 dev = [
     "mypy>=1.18.2",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.3",
+    "types-pyyaml>=6.0.12.20250915",
+    "types-ujson>=5.10.0.20250822",
     "uv-build",
 ]
 
@@ -17,14 +22,22 @@ classifiers = [
     "Programming Language :: Python",
 ]
 description = "Run local checks; push results to Uptime Kuma"
-dependencies = []
+dependencies = [
+    "fastapi[standard]>=0.121.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.12.4",
+    "pydantic-settings>=2.11.0",
+    "pyjwt>=2.10.1",
+    "structlog>=25.5.0",
+    "svcs>=25.1.0",
+]
 name = "kumacub"
 readme = "README.md"
 requires-python = "==3.13.*"
 version = "0.1.0"
 
 [project.scripts]
-kumacub = "kumacub:main"
+kumacubd = "kumacub.entrypoints.kumacubd:main"
 
 [project.urls]
 Homepage = "https://github.com/toadstule/kumacub"
@@ -61,3 +74,13 @@ select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.coverage.run]
+source = ["kumacub"]
+omit = [
+    "*/kumacub/entrypoints/*",
+    "*/types.py",
+]
+
+[tool.coverage.report]
+show_missing = true
