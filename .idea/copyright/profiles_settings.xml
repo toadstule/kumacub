@@ -1,0 +1,16 @@
+<component name="CopyrightManager">
+  <settings>
+    <module2copyright>
+      <element module="All" copyright="Steve Jibson GPL3" />
+    </module2copyright>
+    <LanguageOptions name="Python">
+      <option name="fileTypeOverride" value="3" />
+      <option name="relativeBefore" value="false" />
+      <option name="addBlankBefore" value="true" />
+      <option name="block" value="false" />
+      <option name="lenBefore" value="120" />
+      <option name="lenAfter" value="120" />
+      <option name="filler" value="-" />
+    </LanguageOptions>
+  </settings>
+</component>

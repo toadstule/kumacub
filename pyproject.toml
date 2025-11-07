@@ -12,8 +12,8 @@ dev = [
 [project]
 authors = [{name = "Steve Jibson", email = "steve@jibson.com"}]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: MIT License",
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python",
 ]
 description = "Run local checks; push results to Uptime Kuma"
