@@ -4,6 +4,7 @@
 PRESET_VARS := $(.VARIABLES)
 
 # Project variables
+TEST_COVERAGE   := 80
 PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
 PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
 PYTHON_VERSION_ := $(shell cat .python-version)
@@ -75,8 +76,13 @@ showvars:  ## Display variables available in the Makefile.
 	$(foreach v, $(filter-out $(PRESET_VARS) PRESET_VARS,$(.VARIABLES)), $(info $(v) = $($(v))))
 
 .PHONY: test
-test:  ## Run unit tests.
-	$(PYTEST) --verbose tests
+test: format dep  ## Run unit tests.
+	$(PYTEST) --verbose \
+	  --cov=$(PROJECT_NAME) \
+	  --cov-fail-under=$(TEST_COVERAGE) \
+	  --cov-report=term-missing \
+	  --cov-report=html \
+	  tests
 
 .PHONY: venv-check
 venv-check:  # Verify that we are in a virtual environment (or in a Python container).

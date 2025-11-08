@@ -21,8 +21,6 @@ Notes:
 
 from __future__ import annotations
 
-import uvicorn
-
 from kumacub import config
 from kumacub.logging_config import configure_logging
 
@@ -31,16 +29,6 @@ def main() -> None:
     """Run the FastAPI application using uvicorn."""
     settings = config.get_settings()
     configure_logging(level=settings.log.level, structured=settings.log.structured)
-    uvicorn.run(
-        "kumacub.app:app",
-        host=settings.http_server.host,
-        port=settings.http_server.port,
-        reload=settings.http_server.reload,
-        log_level=settings.log.level.lower(),
-        log_config=None,
-        access_log=False,
-        factory=False,
-    )
 
 
 if __name__ == "__main__":  # pragma: no cover

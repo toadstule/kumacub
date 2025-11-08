@@ -22,42 +22,11 @@ import pydantic
 import pydantic_settings
 
 
-class AuthSettings(pydantic.BaseModel):
-    """HTTP Basic Auth configuration for the /auth endpoint."""
-
-    username: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] | None = None
-    password: pydantic.SecretStr | None = None
-    required: bool = True  # Whether protected endpoints require JWTs
-
-
-class HttpServerSettings(pydantic.BaseModel):
-    """HTTP server configuration."""
-
-    host: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "127.0.0.1"
-    port: Annotated[int, pydantic.Field(gt=0)] = 8000
-    reload: bool = False
-
-
-class JWTSettings(pydantic.BaseModel):
-    """JWT-related configuration grouped into a submodel."""
-
-    algorithm: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "HS256"
-    secret: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] | None = None
-    expire_seconds: Annotated[int, pydantic.Field(gt=0)] = 900
-    leeway_seconds: Annotated[int, pydantic.Field(ge=0)] = 15
-
-
 class LogSettings(pydantic.BaseModel):
     """Logging configuration."""
 
     level: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "INFO"
     structured: bool = True
-
-
-class GreeterSettings(pydantic.BaseModel):
-    """Greeter-specific configuration."""
-
-    prefix: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "hello"
 
 
 class Settings(pydantic_settings.BaseSettings):
@@ -73,21 +42,8 @@ class Settings(pydantic_settings.BaseSettings):
     # App identity
     service_name: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "kumacub"
 
-    # HTTP auth/jwt configuration
-    auth: AuthSettings = AuthSettings()
-
-    # HTTP server configuration
-    http_server: HttpServerSettings = HttpServerSettings()
-
-    # JWT configuration
-    jwt: JWTSettings = JWTSettings()
-
     # Logging configuration
     log: LogSettings = LogSettings()
-
-    # Sample greeter configuration (optional usage by sample service)
-    # TODO: Remove this greeter config group when replacing the sample service.
-    greeter: GreeterSettings = GreeterSettings()
 
     @classmethod
     def settings_customise_sources(
