@@ -35,6 +35,7 @@ class Settings(pydantic_settings.BaseSettings):
     # pydantic-settings configuration
     model_config = pydantic_settings.SettingsConfigDict(
         env_nested_delimiter="__",
+        env_prefix="KUMACUB__",
         extra="ignore",
         toml_file=os.environ.get("CONFIG", "/etc/kumacub/config.toml"),
     )

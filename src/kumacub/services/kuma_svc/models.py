@@ -8,3 +8,22 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 
 """Uptime Kuma service models."""
+
+from typing import Literal
+
+import pydantic
+
+
+class PushParameters(pydantic.BaseModel):
+    """Push parameters model."""
+
+    status: Literal["", "down", "up"]
+    msg: str = pydantic.Field(default="", max_length=250)
+    ping: pydantic.PositiveFloat | None
+
+
+class PushResponse(pydantic.BaseModel):
+    """Push response model."""
+
+    ok: bool
+    msg: str | None

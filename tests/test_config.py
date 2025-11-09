@@ -41,10 +41,10 @@ def test_settings_env_overrides_toml(tmp_path: Path) -> None:
     assert s.service_name == "kumacub"
 
     # Override via env
-    os.environ["LOG__LEVEL"] = "WARNING"
+    os.environ["KUMACUB__LOG__LEVEL"] = "WARNING"
     config.reload_settings()
     assert config.get_settings().log.level == "WARNING"
 
     # Clean up
-    del os.environ["LOG__LEVEL"]
+    del os.environ["KUMACUB__LOG__LEVEL"]
     config.reset_settings_cache()

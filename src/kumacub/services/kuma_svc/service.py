@@ -9,32 +9,70 @@
 
 """Uptime Kuma service."""
 
+import httpx
+import structlog
+
+from kumacub.services.kuma_svc import models
+
 
 class KumaSvc:
-    """Uptime Kuma Service.
+    """Uptime Kuma Service."""
 
     def __init__(self, url: str) -> None:
-        ""Initialize a KumaSvc instance.""
-        self._base_url = url
-        self._client: httpx.AsyncClient | httpx.Client | None = None
+        """Initialize a KumaSvc instance."""
+        self._base_url = url.rstrip("/")
+        self._logger = structlog.get_logger()
 
-    async def __aenter__(self) -> "KumaSvc":
-        ""Enter async context manager.""
-        self._client = httpx.AsyncClient(base_url=self._base_url)
-        return self
+    async def ping(self) -> bool:
+        """Ping the Uptime Kuma server.
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        ""Exit async context manager.""
-        if self._client:
-            await self._client.aclose()
+        Returns:
+            bool: True if the ping was successful, False otherwise.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url=f"{self._base_url}/api/entry-page",
+                    headers={"Accept": "application/json"},
+                    follow_redirects=True,
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                self._logger.debug("Successfully pinged Uptime Kuma server")
+                return True
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            self._logger.warning("Failed to ping Uptime Kuma server", error=str(e))
+            return False
 
-    def __enter__(self) -> "KumaSvc":
-        ""Enter context manager.""
-        self._client = httpx.Client(base_url=self._base_url)
-        return self
+    async def push(self, push_token: str, parameters: models.PushParameters) -> models.PushResponse:
+        """Push a check result to Uptime Kuma.
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        ""Exit context manager.""
-        if self._client:
-            self._client.close()
-    """
+        Args:
+            push_token: The Push token.
+            parameters: The check result parameters to push.
+
+        Returns:
+            PushResponse: The response from the server with success status and optional message.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url=f"{self._base_url}/api/push/{push_token}",
+                    params=parameters.model_dump(mode="json", exclude_none=True, exclude_unset=True),
+                    headers={"Accept": "application/json"},
+                    follow_redirects=True,
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                self._logger.debug("Successfully pushed check result to Uptime Kuma")
+                return models.PushResponse(ok=True, msg=None)
+
+        except httpx.HTTPStatusError as e:
+            error_msg = e.response.json().get("msg", f"Server returned error: {e.response.status_code}")
+            self._logger.warning("Failed to push check result: %s", error_msg)
+            return models.PushResponse(ok=False, msg=error_msg)
+
+        except httpx.RequestError as e:
+            error_msg = f"Request failed: {e!s}"
+            self._logger.warning("Failed to push check result: %s", error_msg)
+            return models.PushResponse(ok=False, msg=error_msg)
