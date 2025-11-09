@@ -78,7 +78,6 @@ convention = "google"
 source = ["kumacub"]
 omit = [
     "*/kumacub/entrypoints/*",
-    "*/types.py",
 ]
 
 [tool.coverage.report]
