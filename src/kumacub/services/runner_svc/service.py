@@ -10,10 +10,12 @@
 """Check runner service."""
 
 import asyncio
+import time
 
 import structlog
 
 from kumacub import types
+from kumacub.library import parsers
 
 
 class RunnerSvc:
@@ -22,6 +24,7 @@ class RunnerSvc:
     def __init__(self) -> None:
         """Initialize a RunnerSvc instance."""
         self._logger = structlog.get_logger()
+        self._start_time: float | None = None
 
     async def run(self, check: types.Check) -> types.CheckResult:
         """Run a check and return the result.
@@ -30,10 +33,11 @@ class RunnerSvc:
             check: The check to run.
 
         Returns:
-            CheckResult: The result of the check.
+            The result of the check.
         """
         self._logger.debug("Running check: %s", check.name)
 
+        self._timer()
         try:
             proc = await asyncio.create_subprocess_exec(
                 check.command,
@@ -54,14 +58,23 @@ class RunnerSvc:
 
             # Determine service state from exit code
             exit_code = proc.returncode or 0  # Default to 0 if None
-            return types.CheckResult.from_nagios_output(name=check.name, exit_code=exit_code, output=stdout)
+            parser = parsers.Parser.factory(check_type=check.type)
+            result = parser.map(check_result=parser.parse(exit_code=exit_code, output=stdout))
+            result.ping = self._timer()
 
         except Exception as e:
             self._logger.exception("Error running check %s", check.name)
             return types.CheckResult(
-                name=check.name,
-                exit_code=3,  # UNKNOWN
-                service_state="UNKNOWN",
-                service_output=f"Error executing check: {e!s}",
-                long_service_output=f"Error details: {e!s}",
+                status="down",
+                msg=f"Error executing check: {e!s}",
+                ping=self._timer(),
             )
+
+        return result
+
+    def _timer(self) -> float:
+        """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""
+        if self._start_time is None:
+            self._start_time = time.time()
+            return 0.0
+        return (time.time() - self._start_time) * 1000

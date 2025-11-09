@@ -7,15 +7,27 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for kumacub.types module."""
+"""Tests for ParseSvc class."""
 
 import pytest
 
-from kumacub.types import CheckResult
+from kumacub.library import parsers
 
 
-class TestCheckResult:
-    """Tests for CheckResult class."""
+class TestParserFactory:
+    """Tests for Parser factory."""
+
+    def test_factory(self) -> None:
+        """Test that the factory returns the correct parser."""
+        with pytest.RaisesExc(ValueError):
+            parsers.Parser.factory(check_type="unknown")
+
+        parser = parsers.Parser.factory(check_type="nagios")
+        assert isinstance(parser, parsers.NagiosParser)
+
+
+class TestNagiosParser:
+    """Tests for NagiosParser class."""
 
     @pytest.mark.parametrize(
         ("exit_code", "expected_state"),
@@ -29,8 +41,7 @@ class TestCheckResult:
     )
     def test_exit_code_mapping(self, exit_code: int, expected_state: str) -> None:
         """Test that exit codes are correctly mapped to service states."""
-        result = CheckResult.from_nagios_output(
-            name="test",
+        result = parsers.NagiosParser().parse(
             exit_code=exit_code,
             output="Test output",
         )
@@ -39,8 +50,7 @@ class TestCheckResult:
 
     def test_empty_output(self) -> None:
         """Test with empty output."""
-        result = CheckResult.from_nagios_output(
-            name="empty",
+        result = parsers.NagiosParser().parse(
             exit_code=0,
             output="",
         )
@@ -51,8 +61,7 @@ class TestCheckResult:
     def test_simple_output(self) -> None:
         """Test with simple output (no performance data)."""
         output = "Everything is fine"
-        result = CheckResult.from_nagios_output(
-            name="simple",
+        result = parsers.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -63,8 +72,7 @@ class TestCheckResult:
     def test_with_performance_data(self) -> None:
         """Test with performance data in the first line."""
         output = "DISK OK - free space: 42% | /=42%;80;90"
-        result = CheckResult.from_nagios_output(
-            name="with_perfdata",
+        result = parsers.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -78,8 +86,7 @@ class TestCheckResult:
         /: 10% used
         /home: 5% used
         """
-        result = CheckResult.from_nagios_output(
-            name="multiline",
+        result = parsers.NagiosParser().parse(
             exit_code=1,  # WARNING
             output=output,
         )
@@ -95,8 +102,7 @@ class TestCheckResult:
         /home: 80% used | /home=80%;85;95
         Additional performance data | metric1=42;50;75 metric2=30;50;75
         """
-        result = CheckResult.from_nagios_output(
-            name="multiline_perfdata",
+        result = parsers.NagiosParser().parse(
             exit_code=2,  # CRITICAL
             output=output,
         )
@@ -107,8 +113,7 @@ class TestCheckResult:
     def test_with_whitespace(self) -> None:
         """Test that whitespace is properly handled."""
         output = "  DISK OK - free space: 42%  |  /=42%;80;90  \n  /: 42% used  "
-        result = CheckResult.from_nagios_output(
-            name="whitespace",
+        result = parsers.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -126,11 +131,17 @@ class TestCheckResult:
         PERFDATA LINE 3
         PERFDATA LINE N
         """
-        result = CheckResult.from_nagios_output(
-            name="spec",
+
+        parser = parsers.NagiosParser()
+        result = parser.parse(
             exit_code=0,
             output=output,
         )
         assert result.service_output == "TEXT OUTPUT"
         assert result.service_performance_data == "OPTIONAL PERFDATA PERFDATA LINE 2 PERFDATA LINE 3 PERFDATA LINE N"
         assert result.long_service_output == "LONG TEXT LINE 1\nLONG TEXT LINE 2\nLONG TEXT LINE N"
+
+        mapped = parser.map(result)
+        assert mapped.status == "up"
+        assert mapped.msg == "TEXT OUTPUT"
+        assert mapped.ping is None
