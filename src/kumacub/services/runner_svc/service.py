@@ -35,7 +35,7 @@ class RunnerSvc:
         Returns:
             The result of the check.
         """
-        self._logger.debug("Running check: %s", check.name)
+        self._logger.info("Running check: %s", check.name)
 
         self._timer()
         try:
@@ -74,7 +74,6 @@ class RunnerSvc:
 
     def _timer(self) -> float:
         """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""
-        if self._start_time is None:
-            self._start_time = time.time()
-            return 0.0
-        return (time.time() - self._start_time) * 1000
+        result = (time.time() - self._start_time) * 1000 if self._start_time is not None else 0.0
+        self._start_time = time.time()
+        return result
