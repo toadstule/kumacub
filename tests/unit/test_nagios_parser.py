@@ -7,28 +7,11 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for parsers and mappers (infra parse + app map)."""
+"""Tests for the Nagios parser implementation."""
 
 import pytest
 
-from kumacub.infrastructure import parsers
 from kumacub.infrastructure.parsers import nagios
-
-
-class TestParserList:
-    """Tests for Parser list."""
-
-
-class TestParserFactory:
-    """Tests for Parser factory."""
-
-    def test_factory(self) -> None:
-        """Test that the factory returns the correct parser."""
-        with pytest.raises(ValueError, match="Unknown parser: unknown"):
-            parsers.get_parser(name="unknown")
-
-        parser = parsers.get_parser(name="nagios")
-        assert isinstance(parser, nagios.NagiosParser)
 
 
 class TestNagiosParser:

@@ -21,14 +21,9 @@ class TestUptimeKumaPublisher:
     """Tests for UptimeKumaPublisher class."""
 
     @pytest.fixture
-    def base_url(self) -> str:
-        """Return the base URL for testing."""
-        return "http://test-server:3001"
-
-    @pytest.fixture
-    def kuma_svc(self, base_url: str) -> uptime_kuma.UptimeKumaPublisher:
+    def uptime_kuma_publisher(self) -> uptime_kuma.UptimeKumaPublisher:
         """Return a UptimeKumaPublisher instance for testing."""
-        return uptime_kuma.UptimeKumaPublisher(url=base_url)
+        return uptime_kuma.UptimeKumaPublisher()
 
     @pytest.fixture
     def publish_args(self) -> uptime_kuma.UptimeKumaPublishArgs:
@@ -43,12 +38,12 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_success(
-        self, kuma_svc: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test successful publish."""
         with respx.mock() as mock:
-            mock.get(f"{kuma_svc._base_url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
-            await kuma_svc.publish(publish_args)
+            mock.get(f"{publish_args.url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
+            await uptime_kuma_publisher.publish(publish_args)
 
             # Verify the request was made with the correct parameters
             request = mock.calls[0][0]
@@ -61,41 +56,39 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_http_error_with_message(
-        self, kuma_svc: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with HTTP error that includes a message (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{kuma_svc._base_url}/api/push/test-token").respond(
+            mock.get(f"{publish_args.url}/api/push/test-token").respond(
                 httpx.codes.NOT_FOUND, json={"ok": False, "msg": "Monitor not found or not active"}
             )
-            await kuma_svc.publish(publish_args)
+            await uptime_kuma_publisher.publish(publish_args)
             # Ensure request happened
             request = mock.calls[0][0]
             assert request.url.path == "/api/push/test-token"
 
     @pytest.mark.asyncio
     async def test_publish_http_error_no_message(
-        self, kuma_svc: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with HTTP error that doesn't include a message (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{kuma_svc._base_url}/api/push/test-token").respond(
+            mock.get(f"{publish_args.url}/api/push/test-token").respond(
                 httpx.codes.INTERNAL_SERVER_ERROR, json={"ok": False, "msg": "Internal server error"}
             )
-            await kuma_svc.publish(publish_args)
+            await uptime_kuma_publisher.publish(publish_args)
             request = mock.calls[0][0]
             assert request.url.path == "/api/push/test-token"
 
     @pytest.mark.asyncio
     async def test_publish_request_error(
-        self, kuma_svc: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with request error (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{kuma_svc._base_url}/api/push/test-token").mock(
-                side_effect=httpx.RequestError("Connection error")
-            )
-            await kuma_svc.publish(publish_args)
+            mock.get(f"{publish_args.url}/api/push/test-token").mock(side_effect=httpx.RequestError("Connection error"))
+            await uptime_kuma_publisher.publish(publish_args)
 
     @pytest.mark.parametrize(
         ("status", "msg", "ping", "expected_params"),
@@ -107,7 +100,7 @@ class TestUptimeKumaPublisher:
     @pytest.mark.asyncio
     async def test_publish_parameters_serialization(
         self,
-        kuma_svc: uptime_kuma.UptimeKumaPublisher,
+        uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher,
         status: Literal["up", "down"],
         msg: str,
         ping: float | None,
@@ -115,9 +108,6 @@ class TestUptimeKumaPublisher:
     ) -> None:
         """Test that push parameters are correctly serialized to query params."""
         with respx.mock() as mock:
-            # Mock the response
-            mock.get(f"{kuma_svc._base_url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
-
             # Create parameters and make the request
             args = uptime_kuma.UptimeKumaPublishArgs(
                 url="http://ignored",
@@ -126,7 +116,9 @@ class TestUptimeKumaPublisher:
                 msg=msg,
                 ping=ping,
             )
-            await kuma_svc.publish(args)
+            # Mock the response using the URL from args
+            mock.get(f"{args.url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
+            await uptime_kuma_publisher.publish(args)
 
             # Get the request that was made
             request = mock.calls[0][0]

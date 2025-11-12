@@ -7,7 +7,10 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for ProcessExecutor class."""
+"""Integration tests for ProcessExecutor class.
+
+These tests execute real subprocesses to verify end-to-end behavior.
+"""
 
 import asyncio
 from unittest import mock
@@ -19,7 +22,7 @@ from kumacub.infrastructure.executors.process_executor import ProcessExecutor
 
 
 class TestProcessExecutor:
-    """Tests for ProcessExecutor class."""
+    """Integration tests for ProcessExecutor with real subprocess execution."""
 
     @pytest.fixture
     def runner(self, monkeypatch: pytest.MonkeyPatch) -> ProcessExecutor:
@@ -168,5 +171,3 @@ class TestProcessExecutor:
             assert result.msg == "test output"
             assert result.ping is not None
             assert result.ping > 0
-
-    # Removed test_run_with_working_directory as working_dir is not a field in the Check model

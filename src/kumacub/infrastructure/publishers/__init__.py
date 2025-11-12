@@ -7,34 +7,34 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""KumaCub infrastructure publishers."""
+"""Publishers for different monitoring services."""
 
-from typing import Any, Protocol, TypeVar
+from typing import Protocol
 
 import pydantic
 
-from kumacub.infrastructure.publishers.uptime_kuma import UptimeKumaPublisher
-
-TPublishArgs_contra = TypeVar("TPublishArgs_contra", bound=pydantic.BaseModel, contravariant=True)
+from .uptime_kuma import UptimeKumaPublishArgs, UptimeKumaPublisher
 
 _REGISTRY = {"uptime_kuma": UptimeKumaPublisher}
 
+__all__ = ["PublisherP", "UptimeKumaPublishArgs", "UptimeKumaPublisher", "get_publisher"]
 
-class PublisherP(Protocol[TPublishArgs_contra]):
-    """Protocol for publishing data to external services."""
 
-    async def publish(self, args: TPublishArgs_contra) -> None:
-        """Publish data to the external service.
+class PublisherP(Protocol):
+    """Protocol for publishing check results to external services."""
+
+    async def publish(self, args: pydantic.BaseModel) -> None:
+        """Publish check results to the external service.
 
         Args:
-            args: The data to publish, must be a pydantic BaseModel
+            args: Publisher-specific arguments as a pydantic model.
         """
 
 
-def get_publisher(name: str, *args: object, **kwargs: object) -> PublisherP[Any]:
-    """Construct a publisher by name with provided constructor args."""
+def get_publisher(name: str) -> PublisherP:
+    """Construct a parser by name."""
     try:
-        _REGISTRY[name](*args, **kwargs)
+        return _REGISTRY[name]()
     except KeyError as e:
-        msg = f"Unknown publisher type: {name}"
+        msg = f"Unknown publisher: {name}"
         raise ValueError(msg) from e

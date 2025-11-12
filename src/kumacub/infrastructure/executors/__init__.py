@@ -32,10 +32,10 @@ class ExecutorP(Protocol):
         """
 
 
-def get_parser(name: str) -> ExecutorP:
-    """Construct a parser by name."""
+def get_executor(name: str) -> ExecutorP:
+    """Construct an executor by name."""
     try:
         return _REGISTRY[name]()
     except KeyError as e:
-        msg = f"Unknown parser: {name}"
+        msg = f"Unknown executor: {name}"
         raise ValueError(msg) from e

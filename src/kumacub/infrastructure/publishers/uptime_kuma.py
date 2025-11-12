@@ -9,7 +9,7 @@
 
 """Uptime Kuma publisher."""
 
-from typing import Literal
+from typing import Literal, cast
 
 import httpx
 import pydantic
@@ -33,20 +33,23 @@ class PushResponse(pydantic.BaseModel):
     msg: str | None
 
 
-class UptimeKumaPublisher("PublisherP[UptimeKumaPublishArgs]"):
+class UptimeKumaPublisher:
     """Uptime Kuma publisher implementing the publisher protocol."""
 
-    def __init__(self, url: str) -> None:
-        """Initialize a KumaSvc instance."""
+    def __init__(self) -> None:
+        """Initialize an UptimeKumaPublisher instance."""
         self._logger = structlog.get_logger()
-        self._base_url = url.rstrip("/")
 
-    async def publish(self, args: UptimeKumaPublishArgs) -> None:
+    async def publish(self, args: pydantic.BaseModel) -> None:
         """Publish a check result to Uptime Kuma."""
-        url = f"{self._base_url}/api/push/{args.push_token}"
+        # Cast to specific args type for this publisher
+        typed_args = cast("UptimeKumaPublishArgs", args)
+        url = f"{typed_args.url}/api/push/{typed_args.push_token}"
         fields = {"status", "msg", "ping"}
         params = {
-            k: v for k, v in args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items() if k in fields
+            k: v
+            for k, v in typed_args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items()
+            if k in fields
         }
         try:
             async with httpx.AsyncClient() as client:
