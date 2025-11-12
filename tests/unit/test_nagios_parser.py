@@ -9,6 +9,8 @@
 
 """Tests for the Nagios parser implementation."""
 
+import textwrap
+
 import pytest
 
 from kumacub.infrastructure.parsers import nagios
@@ -42,6 +44,8 @@ class TestNagiosParser:
             exit_code=0,
             output="",
         )
+        assert result.exit_code == 0
+        assert result.service_state == "OK"
         assert result.service_output == ""
         assert result.service_performance_data == ""
         assert result.long_service_output == ""
@@ -71,7 +75,7 @@ class TestNagiosParser:
         """Test with multiple lines of output."""
         output = """
         DISK WARNING - free space: 10%
-        /: 10% used
+        /: 90% used
         /home: 5% used
         """
         result = nagios.NagiosParser().parse(
@@ -79,7 +83,7 @@ class TestNagiosParser:
             output=output,
         )
         assert result.service_output == "DISK WARNING - free space: 10%"
-        assert result.long_service_output == "/: 10% used\n/home: 5% used"
+        assert result.long_service_output == "/: 90% used\n/home: 5% used"
         assert result.service_performance_data == ""
 
     def test_with_performance_data_in_multiple_lines(self) -> None:
@@ -111,15 +115,14 @@ class TestNagiosParser:
 
     def test_from_api_spec(self) -> None:
         """Test contrived output from API spec."""
-        output = """
+        output = textwrap.dedent("""
         TEXT OUTPUT | OPTIONAL PERFDATA
         LONG TEXT LINE 1
         LONG TEXT LINE 2
         LONG TEXT LINE N | PERFDATA LINE 2
         PERFDATA LINE 3
         PERFDATA LINE N
-        """
-
+        """)
         parser = nagios.NagiosParser()
         result = parser.parse(
             exit_code=0,

@@ -21,12 +21,12 @@ _REGISTRY = {"nagios": NagiosParser}
 class ParserP(Protocol):
     """Protocol for converting raw outputs into structured models."""
 
-    def parse(self, exit_code: int, output: str) -> pydantic.BaseModel:
+    def parse(self, output: str, exit_code: int = 0) -> pydantic.BaseModel:
         """Parse raw process output into a structured model.
 
         Args:
-            exit_code: The exit code from the process
             output: The raw output from the process
+            exit_code: The exit code from the process (default: 0)
 
         Returns:
             A pydantic model containing the parsed data

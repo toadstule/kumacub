@@ -27,61 +27,56 @@ class Result(pydantic.BaseModel):
 
 
 class NagiosParser:
-    """Nagios parser in infrastructure: raw parsing only."""
+    """Output parser for Nagios-compatible checks."""
 
-    _state_map: Final[dict[int, Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]]] = {
+    _STATE_MAP: Final[dict[int, Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]]] = {
         0: "OK",
         1: "WARNING",
         2: "CRITICAL",
         3: "UNKNOWN",
     }
 
-    def parse(self, exit_code: int, output: str) -> Result:
+    def parse(self, output: str, exit_code: int = 0) -> Result:
         """Parse the raw output into the parser-specific model."""
+        service_output = ""
+        long_service_output = ""
+        service_performance_data = ""
+
         lines = [line.strip() for line in output.splitlines() if line.strip()]
-        if not lines:
-            return Result(
-                service_state="UNKNOWN",
-                exit_code=3,
-                service_output="",
-                long_service_output="",
-                service_performance_data="",
-            )
+        if lines:
+            performance_data = ""
+            service_output = lines.pop(0)
 
-        first_line = lines.pop(0)
-        text_output = first_line
-        performance_data = ""
+            if "|" in service_output:
+                service_output, performance_data = (part.strip() for part in service_output.split("|", 1))
 
-        if "|" in first_line:
-            text_output, performance_data = (part.strip() for part in first_line.split("|", 1))
+            long_text_lines: list[str] = []
+            performance_data_parts: list[str] = []
+            in_performance_data = False
 
-        long_text_lines: list[str] = []
-        performance_data_parts: list[str] = []
-        in_performance_data = False
+            if performance_data:
+                performance_data_parts.append(performance_data)
 
-        if performance_data:
-            performance_data_parts.append(performance_data)
+            for line in lines:
+                if "|" in line:
+                    text_part, perf_part = (part.strip() for part in line.split("|", 1))
+                    if text_part:
+                        long_text_lines.append(text_part)
+                    performance_data_parts.append(perf_part)
+                    in_performance_data = True
+                elif in_performance_data and line and not line.startswith((" ", "\t")):
+                    performance_data_parts.append(line)
+                else:
+                    long_text_lines.append(line)
+                    in_performance_data = False
 
-        for line in lines:
-            if "|" in line:
-                text_part, perf_part = (part.strip() for part in line.split("|", 1))
-                if text_part:
-                    long_text_lines.append(text_part)
-                performance_data_parts.append(perf_part)
-                in_performance_data = True
-            elif in_performance_data and line and not line.startswith((" ", "\t")):
-                performance_data_parts.append(line)
-            else:
-                long_text_lines.append(line)
-                in_performance_data = False
-
-        performance_data = " ".join(filter(None, performance_data_parts))
-        long_service_output = "\n".join(long_text_lines)
+            service_performance_data = " ".join(filter(None, performance_data_parts))
+            long_service_output = "\n".join(long_text_lines)
 
         return Result(
-            service_state=self._state_map.get(exit_code, "UNKNOWN"),
+            service_state=self._STATE_MAP.get(exit_code, "UNKNOWN"),
             exit_code=exit_code,
-            service_output=text_output,
+            service_output=service_output,
             long_service_output=long_service_output,
-            service_performance_data=performance_data,
+            service_performance_data=service_performance_data,
         )
