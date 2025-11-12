@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from kumacub.application.result_translators import result_translator
-
 if TYPE_CHECKING:
     import pydantic
 
@@ -22,10 +20,10 @@ from kumacub.domain import models
 from kumacub.infrastructure.parsers import nagios as infra_nagios  # noqa: TC001
 
 
-class NagiosMapper(result_translator.ResultTranslator, check_type="nagios"):
+class NagiosMapper:
     """Map infrastructure Nagios parser Result to domain CheckResult."""
 
-    def map(self, parsed: pydantic.BaseModel) -> models.CheckResult:
+    def translate(self, parsed: pydantic.BaseModel) -> models.CheckResult:
         """Map a parser-specific model to a domain CheckResult."""
         r = cast("infra_nagios.Result", parsed)
         return models.CheckResult(

@@ -8,3 +8,34 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 
 """KumaCub infrastructure executors."""
+
+from typing import Protocol
+
+from kumacub.domain import models
+
+from .process_executor import ProcessExecutor
+
+_REGISTRY = {"process": ProcessExecutor}
+
+
+class ExecutorP(Protocol):
+    """Protocol for executing checks and returning results."""
+
+    async def run(self, check: models.Check) -> models.CheckResult:
+        """Execute a check and return the result.
+
+        Args:
+            check: The check to execute
+
+        Returns:
+            The result of the check execution
+        """
+
+
+def get_parser(name: str) -> ExecutorP:
+    """Construct a parser by name."""
+    try:
+        return _REGISTRY[name]()
+    except KeyError as e:
+        msg = f"Unknown parser: {name}"
+        raise ValueError(msg) from e

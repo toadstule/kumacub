@@ -10,18 +10,13 @@
 
 from typing import Protocol
 
+import pydantic
+
 from kumacub.domain import models
 
 
-class CheckExecutor(Protocol):
-    """Check executor protocol."""
+class ResultTranslatorP(Protocol):
+    """Translator protocol for mapping parsed models to domain models."""
 
-    async def run(self, check: models.Check) -> models.CheckResult:
-        """Run a check and return the result."""
-
-
-class MonitorClient(Protocol):
-    """Monitor client protocol."""
-
-    async def push(self, result: models.CheckResult, check: models.Check) -> None:
-        """Push a check result to the monitor."""
+    def translate(self, parsed: pydantic.BaseModel) -> models.CheckResult:
+        """Map a parser-specific model to a domain CheckResult."""

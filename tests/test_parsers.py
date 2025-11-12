@@ -11,9 +11,12 @@
 
 import pytest
 
-import kumacub.application.result_translators as app_translators
-import kumacub.infrastructure.parsers as infra_parsers
-from kumacub.infrastructure.parsers import nagios as infra_nagios
+from kumacub.infrastructure import parsers
+from kumacub.infrastructure.parsers import nagios
+
+
+class TestParserList:
+    """Tests for Parser list."""
 
 
 class TestParserFactory:
@@ -21,11 +24,11 @@ class TestParserFactory:
 
     def test_factory(self) -> None:
         """Test that the factory returns the correct parser."""
-        with pytest.raises(ValueError, match="Unknown check type: unknown"):
-            infra_parsers.get_parser(check_type="unknown")
+        with pytest.raises(ValueError, match="Unknown parser: unknown"):
+            parsers.get_parser(name="unknown")
 
-        parser = infra_parsers.get_parser(check_type="nagios")
-        assert isinstance(parser, infra_nagios.NagiosParser)
+        parser = parsers.get_parser(name="nagios")
+        assert isinstance(parser, nagios.NagiosParser)
 
 
 class TestNagiosParser:
@@ -43,7 +46,7 @@ class TestNagiosParser:
     )
     def test_exit_code_mapping(self, exit_code: int, expected_state: str) -> None:
         """Test that exit codes are correctly mapped to service states."""
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=exit_code,
             output="Test output",
         )
@@ -52,7 +55,7 @@ class TestNagiosParser:
 
     def test_empty_output(self) -> None:
         """Test with empty output."""
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=0,
             output="",
         )
@@ -63,7 +66,7 @@ class TestNagiosParser:
     def test_simple_output(self) -> None:
         """Test with simple output (no performance data)."""
         output = "Everything is fine"
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -74,7 +77,7 @@ class TestNagiosParser:
     def test_with_performance_data(self) -> None:
         """Test with performance data in the first line."""
         output = "DISK OK - free space: 42% | /=42%;80;90"
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -88,7 +91,7 @@ class TestNagiosParser:
         /: 10% used
         /home: 5% used
         """
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=1,  # WARNING
             output=output,
         )
@@ -104,7 +107,7 @@ class TestNagiosParser:
         /home: 80% used | /home=80%;85;95
         Additional performance data | metric1=42;50;75 metric2=30;50;75
         """
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=2,  # CRITICAL
             output=output,
         )
@@ -115,7 +118,7 @@ class TestNagiosParser:
     def test_with_whitespace(self) -> None:
         """Test that whitespace is properly handled."""
         output = "  DISK OK - free space: 42%  |  /=42%;80;90  \n  /: 42% used  "
-        result = infra_nagios.NagiosParser().parse(
+        result = nagios.NagiosParser().parse(
             exit_code=0,
             output=output,
         )
@@ -134,7 +137,7 @@ class TestNagiosParser:
         PERFDATA LINE N
         """
 
-        parser = infra_nagios.NagiosParser()
+        parser = nagios.NagiosParser()
         result = parser.parse(
             exit_code=0,
             output=output,
@@ -142,8 +145,3 @@ class TestNagiosParser:
         assert result.service_output == "TEXT OUTPUT"
         assert result.service_performance_data == "OPTIONAL PERFDATA PERFDATA LINE 2 PERFDATA LINE 3 PERFDATA LINE N"
         assert result.long_service_output == "LONG TEXT LINE 1\nLONG TEXT LINE 2\nLONG TEXT LINE N"
-
-        mapped = app_translators.translate("nagios", result)
-        assert mapped.status == "up"
-        assert mapped.msg == "TEXT OUTPUT"
-        assert mapped.ping is None

@@ -6,55 +6,49 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for the Publisher registry and factory."""
+"""Tests for the publisher registry (protocol-based)."""
 
-import pydantic
 import pytest
 
-import kumacub.infrastructure.publishers.publisher as publisher_mod
-
-
-class DummyArgs(pydantic.BaseModel):
-    """Dummy args model for testing."""
-
-    value: int
+from kumacub.infrastructure.publishers import registry
 
 
 @pytest.mark.asyncio
 async def test_registry_and_factory_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Defining a subclass with publisher_type registers it and factory returns an instance."""
+    """Registering a factory under a name and getting it returns an instance."""
     # Isolate registry for this test
-    monkeypatch.setattr(publisher_mod.Publisher, "_registry", {}, raising=False)
+    monkeypatch.setattr(registry, "_REGISTRY", {}, raising=False)
 
-    class DummyPublisher(publisher_mod.Publisher[DummyArgs], publisher_type="dummy"):
-        async def publish(self, _: DummyArgs) -> None:  # pragma: no cover - trivial
+    class DummyPublisher:
+        async def publish(self, _: object) -> None:  # pragma: no cover - trivial
             return None
 
-    assert "dummy" in publisher_mod.Publisher._registry
-    assert publisher_mod.Publisher._registry["dummy"] is DummyPublisher
+    registry.register_publisher("dummy", lambda: DummyPublisher())
+
+    assert registry.list_publishers() == ["dummy"]
 
     # Factory should construct a new instance
-    instance = publisher_mod.Publisher.factory("dummy")
+    instance = registry.get_publisher("dummy")
     assert isinstance(instance, DummyPublisher)
 
 
 def test_factory_unknown_type_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Unknown publisher types raise ValueError with a helpful message."""
-    monkeypatch.setattr(publisher_mod.Publisher, "_registry", {}, raising=False)
+    monkeypatch.setattr(registry, "_REGISTRY", {}, raising=False)
 
-    with pytest.raises(ValueError, match="Unknown publisher type: nope") as exc:
-        _ = publisher_mod.Publisher.factory("nope")
-
-    assert "Unknown publisher type: nope" in str(exc.value)
+    with pytest.raises(ValueError, match="Unknown publisher type: nope"):
+        _ = registry.get_publisher("nope")
 
 
-def test_get_publisher_helper(monkeypatch: pytest.MonkeyPatch) -> None:
-    """get_publisher proxies to Publisher.factory and returns an instance."""
-    monkeypatch.setattr(publisher_mod.Publisher, "_registry", {}, raising=False)
+def test_list_and_get_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """list_publishers and get_publisher operate on the registry as expected."""
+    monkeypatch.setattr(registry, "_REGISTRY", {}, raising=False)
 
-    class DummyPublisher(publisher_mod.Publisher[DummyArgs], publisher_type="dummy"):
-        async def publish(self, _: DummyArgs) -> None:  # pragma: no cover - trivial
+    class DummyPublisher:
+        async def publish(self, _: object) -> None:  # pragma: no cover - trivial
             return None
 
-    instance = publisher_mod.get_publisher("dummy")
+    registry.register_publisher("dummy", lambda: DummyPublisher())
+    assert registry.list_publishers() == ["dummy"]
+    instance = registry.get_publisher("dummy")
     assert isinstance(instance, DummyPublisher)

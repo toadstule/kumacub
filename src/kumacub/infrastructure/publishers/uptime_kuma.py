@@ -13,8 +13,7 @@ from typing import Literal
 
 import httpx
 import pydantic
-
-from kumacub.infrastructure.publishers import publisher
+import structlog
 
 
 class UptimeKumaPublishArgs(pydantic.BaseModel):
@@ -34,12 +33,12 @@ class PushResponse(pydantic.BaseModel):
     msg: str | None
 
 
-class UptimeKumaPublisher(publisher.Publisher[UptimeKumaPublishArgs], publisher_type="uptime_kuma"):
-    """Uptime Kuma publisher."""
+class UptimeKumaPublisher("PublisherP[UptimeKumaPublishArgs]"):
+    """Uptime Kuma publisher implementing the publisher protocol."""
 
     def __init__(self, url: str) -> None:
         """Initialize a KumaSvc instance."""
-        super().__init__()
+        self._logger = structlog.get_logger()
         self._base_url = url.rstrip("/")
 
     async def publish(self, args: UptimeKumaPublishArgs) -> None:

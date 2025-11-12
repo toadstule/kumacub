@@ -15,8 +15,6 @@ from typing import Final, Literal
 
 import pydantic
 
-from kumacub.infrastructure.parsers import parser
-
 
 class Result(pydantic.BaseModel):
     """Nagios-style check result."""
@@ -28,7 +26,7 @@ class Result(pydantic.BaseModel):
     service_performance_data: str
 
 
-class NagiosParser(parser.Parser, check_type="nagios"):
+class NagiosParser:
     """Nagios parser in infrastructure: raw parsing only."""
 
     _state_map: Final[dict[int, Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]]] = {

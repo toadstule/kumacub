@@ -14,7 +14,7 @@ import time
 
 import structlog
 
-import kumacub.application.result_translators as app_translators
+import kumacub.application.result_translators as rt_translators
 import kumacub.infrastructure.parsers as infra_parsers
 from kumacub.domain import models
 
@@ -62,9 +62,9 @@ class ProcessExecutor:
 
             # Parse raw output (infrastructure) then map to domain (application)
             exit_code = proc.returncode or 0  # Default to 0 if None
-            parser = infra_parsers.get_parser(check_type=check.type)
+            parser = infra_parsers.get_parser(name=check.type)
             parsed = parser.parse(exit_code=exit_code, output=stdout)
-            result = app_translators.translate(check_type=check.type, parsed=parsed)
+            result: models.CheckResult = rt_translators.get_result_translator(name=check.type).translate(parsed=parsed)
             result.ping = self._timer()
 
         except Exception as e:

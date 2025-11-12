@@ -9,10 +9,32 @@
 
 """KumaCub infrastructure publishers."""
 
-from . import uptime_kuma  # noqa: F401 - ensure registration side-effect
-from .publisher import Publisher, get_publisher  # re-export base API
+from typing import Any, Protocol, TypeVar
 
-__all__ = [
-    "Publisher",
-    "get_publisher",
-]
+import pydantic
+
+from kumacub.infrastructure.publishers.uptime_kuma import UptimeKumaPublisher
+
+TPublishArgs_contra = TypeVar("TPublishArgs_contra", bound=pydantic.BaseModel, contravariant=True)
+
+_REGISTRY = {"uptime_kuma": UptimeKumaPublisher}
+
+
+class PublisherP(Protocol[TPublishArgs_contra]):
+    """Protocol for publishing data to external services."""
+
+    async def publish(self, args: TPublishArgs_contra) -> None:
+        """Publish data to the external service.
+
+        Args:
+            args: The data to publish, must be a pydantic BaseModel
+        """
+
+
+def get_publisher(name: str, *args: object, **kwargs: object) -> PublisherP[Any]:
+    """Construct a publisher by name with provided constructor args."""
+    try:
+        _REGISTRY[name](*args, **kwargs)
+    except KeyError as e:
+        msg = f"Unknown publisher type: {name}"
+        raise ValueError(msg) from e

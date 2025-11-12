@@ -7,12 +7,36 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Infrastructure parser package."""
+"""Parsers for different check types."""
 
-from . import nagios  # noqa: F401 - ensure registration side-effect
-from .parser import Parser, get_parser  # re-export base API
+from typing import Protocol
 
-__all__ = [
-    "Parser",
-    "get_parser",
-]
+import pydantic
+
+from .nagios import NagiosParser
+
+_REGISTRY = {"nagios": NagiosParser}
+
+
+class ParserP(Protocol):
+    """Protocol for converting raw outputs into structured models."""
+
+    def parse(self, exit_code: int, output: str) -> pydantic.BaseModel:
+        """Parse raw process output into a structured model.
+
+        Args:
+            exit_code: The exit code from the process
+            output: The raw output from the process
+
+        Returns:
+            A pydantic model containing the parsed data
+        """
+
+
+def get_parser(name: str) -> ParserP:
+    """Construct a parser by name."""
+    try:
+        return _REGISTRY[name]()
+    except KeyError as e:
+        msg = f"Unknown parser: {name}"
+        raise ValueError(msg) from e
