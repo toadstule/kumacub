@@ -19,23 +19,23 @@ import pydantic
 import pytest
 
 from kumacub.domain import models
-from kumacub.infrastructure.executors.process_executor import ProcessExecutor
+from kumacub.infrastructure.executors.process_executor import _ProcessExecutor
 
 
 class TestProcessExecutorUnit:
-    """Unit tests for ProcessExecutor with mocked dependencies.
+    """Unit tests for _ProcessExecutor with mocked dependencies.
 
     These tests verify the executor orchestration logic without executing real subprocesses.
     """
 
     @pytest.fixture
-    def runner(self, monkeypatch: pytest.MonkeyPatch) -> ProcessExecutor:
-        """Return a ProcessExecutor instance with mocked logger."""
+    def runner(self, monkeypatch: pytest.MonkeyPatch) -> _ProcessExecutor:
+        """Return a _ProcessExecutor instance with mocked logger."""
         mock_logger = mock.MagicMock()
         monkeypatch.setattr(
             "kumacub.infrastructure.executors.process_executor.structlog.get_logger", lambda: mock_logger
         )
-        return ProcessExecutor()
+        return _ProcessExecutor()
 
     @pytest.fixture
     def sample_check(self) -> models.Check:
@@ -49,7 +49,7 @@ class TestProcessExecutorUnit:
         )
 
     @pytest.mark.asyncio
-    async def test_run_orchestration_success(self, runner: ProcessExecutor, sample_check: models.Check) -> None:
+    async def test_run_orchestration_success(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
         """Test that executor properly orchestrates subprocess, parser, and translator."""
         # Mock subprocess execution
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
@@ -103,7 +103,7 @@ class TestProcessExecutorUnit:
                     assert result.ping >= 0
 
     @pytest.mark.asyncio
-    async def test_run_subprocess_failure(self, runner: ProcessExecutor, sample_check: models.Check) -> None:
+    async def test_run_subprocess_failure(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
         """Test handling of subprocess failures."""
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()
@@ -137,7 +137,7 @@ class TestProcessExecutorUnit:
                     assert result.ping is not None
 
     @pytest.mark.asyncio
-    async def test_run_exception_handling(self, runner: ProcessExecutor, sample_check: models.Check) -> None:
+    async def test_run_exception_handling(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
         """Test that exceptions are caught and converted to CheckResult."""
         with mock.patch(
             "asyncio.create_subprocess_exec",
@@ -152,7 +152,7 @@ class TestProcessExecutorUnit:
             assert result.ping >= 0
 
     @pytest.mark.asyncio
-    async def test_timer_measures_execution_time(self, runner: ProcessExecutor, sample_check: models.Check) -> None:
+    async def test_timer_measures_execution_time(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
         """Test that timer correctly measures execution time."""
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()
@@ -186,7 +186,7 @@ class TestProcessExecutorUnit:
                         assert result.ping == pytest.approx(500.0, abs=1.0)
 
     @pytest.mark.asyncio
-    async def test_stderr_logged_as_warning(self, runner: ProcessExecutor, sample_check: models.Check) -> None:
+    async def test_stderr_logged_as_warning(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
         """Test that stderr output is logged as warning."""
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()

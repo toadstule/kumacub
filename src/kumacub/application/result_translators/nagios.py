@@ -11,21 +11,24 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 if TYPE_CHECKING:
     import pydantic
 
 from kumacub.domain import models
-from kumacub.infrastructure.parsers import nagios as infra_nagios  # noqa: TC001
+from kumacub.infrastructure import parsers  # noqa: TC001
 
 
-class NagiosMapper:
+class _NagiosMapper:
     """Map infrastructure Nagios parser Result to domain CheckResult."""
 
-    def translate(self, parsed: pydantic.BaseModel) -> models.CheckResult:
+    name: ClassVar[str] = "nagios"
+
+    @staticmethod
+    def translate(parsed: pydantic.BaseModel) -> models.CheckResult:
         """Map a parser-specific model to a domain CheckResult."""
-        r = cast("infra_nagios.Result", parsed)
+        r = cast("parsers.NagiosResult", parsed)
         return models.CheckResult(
             status="up" if r.exit_code == 0 else "down",
             msg=r.service_output,

@@ -11,21 +11,21 @@
 
 import pytest
 
-from kumacub.application.result_translators import nagios as app_nagios
-from kumacub.infrastructure.parsers import nagios as infra_nagios
+from kumacub.application import result_translators
+from kumacub.infrastructure import parsers
 
 
 class TestNagiosResultTranslator:
     """Tests for NagiosMapper translate behavior."""
 
     @pytest.fixture
-    def translator(self) -> app_nagios.NagiosMapper:
+    def translator(self) -> result_translators.ResultTranslatorP:
         """Return a NagiosMapper instance."""
-        return app_nagios.NagiosMapper()
+        return result_translators.get_result_translator(name="nagios")
 
-    def test_translate_up_status(self, translator: app_nagios.NagiosMapper) -> None:
+    def test_translate_up_status(self, translator: result_translators.ResultTranslatorP) -> None:
         """Exit code 0 should result in status 'up' and msg from service_output."""
-        parsed = infra_nagios.Result(
+        parsed = parsers.NagiosResult(
             service_state="OK",
             exit_code=0,
             service_output="All good",
@@ -36,9 +36,9 @@ class TestNagiosResultTranslator:
         assert result.status == "up"
         assert result.msg == "All good"
 
-    def test_translate_down_status(self, translator: app_nagios.NagiosMapper) -> None:
+    def test_translate_down_status(self, translator: result_translators.ResultTranslatorP) -> None:
         """Non-zero exit code should result in status 'down'."""
-        parsed = infra_nagios.Result(
+        parsed = parsers.NagiosResult(
             service_state="CRITICAL",
             exit_code=2,
             service_output="Disk full",

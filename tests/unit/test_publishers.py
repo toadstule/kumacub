@@ -24,4 +24,4 @@ class TestPublisherFactory:
             publishers.get_publisher(name="unknown")
 
         publisher = publishers.get_publisher(name="uptime_kuma")
-        assert isinstance(publisher, uptime_kuma.UptimeKumaPublisher)
+        assert isinstance(publisher, uptime_kuma._UptimeKumaPublisher)

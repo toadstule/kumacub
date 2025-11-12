@@ -7,19 +7,29 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""KumaCub infrastructure executors."""
+"""Executors for checks."""
 
-from typing import Protocol
+from __future__ import annotations
 
-from kumacub.domain import models
+from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
-from .process_executor import ProcessExecutor
+from .process_executor import _ProcessExecutor
 
-_REGISTRY = {"process": ProcessExecutor}
+if TYPE_CHECKING:
+    from kumacub.domain import models
+
+__all__ = ["ExecutorP", "get_executor"]
+
+# Extend this to add new executors.
+_EXECUTORS: Final[list[type[ExecutorP]]] = [_ProcessExecutor]
+
+_REGISTRY: Final[dict[str, type[ExecutorP]]] = {p.name: p for p in _EXECUTORS}
 
 
 class ExecutorP(Protocol):
     """Protocol for executing checks and returning results."""
+
+    name: ClassVar[str] = ""
 
     async def run(self, check: models.Check) -> models.CheckResult:
         """Execute a check and return the result.

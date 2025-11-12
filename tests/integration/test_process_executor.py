@@ -18,21 +18,21 @@ from unittest import mock
 import pytest
 
 from kumacub.domain import models
-from kumacub.infrastructure.executors.process_executor import ProcessExecutor
+from kumacub.infrastructure.executors.process_executor import _ProcessExecutor
 
 
 class TestProcessExecutor:
-    """Integration tests for ProcessExecutor with real subprocess execution."""
+    """Integration tests for _ProcessExecutor with real subprocess execution."""
 
     @pytest.fixture
-    def runner(self, monkeypatch: pytest.MonkeyPatch) -> ProcessExecutor:
-        """Return a ProcessExecutor instance with mocked logger."""
+    def runner(self, monkeypatch: pytest.MonkeyPatch) -> _ProcessExecutor:
+        """Return a _ProcessExecutor instance with mocked logger."""
         # Patch the logger to avoid issues with test environment
         mock_logger = mock.MagicMock()
         monkeypatch.setattr(
             "kumacub.infrastructure.executors.process_executor.structlog.get_logger", lambda: mock_logger
         )
-        return ProcessExecutor()
+        return _ProcessExecutor()
 
     @pytest.fixture
     def success_check(self) -> models.Check:
@@ -65,7 +65,7 @@ class TestProcessExecutor:
         )
 
     @pytest.mark.asyncio
-    async def test_run_success(self, runner: ProcessExecutor, success_check: models.Check) -> None:
+    async def test_run_success(self, runner: _ProcessExecutor, success_check: models.Check) -> None:
         """Test running a successful command."""
         result = await runner.run(success_check)
 
@@ -75,7 +75,7 @@ class TestProcessExecutor:
         assert result.ping > 0
 
     @pytest.mark.asyncio
-    async def test_run_error(self, runner: ProcessExecutor, error_check: models.Check) -> None:
+    async def test_run_error(self, runner: _ProcessExecutor, error_check: models.Check) -> None:
         """Test running a command that returns non-zero exit code."""
         result = await runner.run(error_check)
 
@@ -88,7 +88,7 @@ class TestProcessExecutor:
     @pytest.mark.asyncio
     async def test_run_command_not_found(
         self,
-        runner: ProcessExecutor,
+        runner: _ProcessExecutor,
         not_found_check: models.Check,
     ) -> None:
         """Test running a non-existent command."""
@@ -102,7 +102,7 @@ class TestProcessExecutor:
     @pytest.mark.asyncio
     async def test_run_timeout(
         self,
-        runner: ProcessExecutor,
+        runner: _ProcessExecutor,
         success_check: models.Check,
     ) -> None:
         """Test command timeout handling."""
@@ -121,7 +121,7 @@ class TestProcessExecutor:
     @pytest.mark.asyncio
     async def test_run_with_environment(
         self,
-        runner: ProcessExecutor,
+        runner: _ProcessExecutor,
         success_check: models.Check,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -146,7 +146,7 @@ class TestProcessExecutor:
     @pytest.mark.asyncio
     async def test_run_with_stderr(
         self,
-        runner: ProcessExecutor,
+        runner: _ProcessExecutor,
         success_check: models.Check,
     ) -> None:
         """Test running a command that writes to stderr."""

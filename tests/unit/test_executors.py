@@ -12,7 +12,6 @@
 import pytest
 
 from kumacub.infrastructure import executors
-from kumacub.infrastructure.executors import process_executor
 
 
 class TestExecutorFactory:
@@ -24,4 +23,4 @@ class TestExecutorFactory:
             executors.get_executor(name="unknown")
 
         executor = executors.get_executor(name="process")
-        assert isinstance(executor, process_executor.ProcessExecutor)
+        assert executor.name == "process"

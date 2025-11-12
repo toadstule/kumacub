@@ -9,7 +9,7 @@
 
 """Uptime Kuma publisher."""
 
-from typing import Literal, cast
+from typing import ClassVar, Literal, cast
 
 import httpx
 import pydantic
@@ -33,8 +33,10 @@ class PushResponse(pydantic.BaseModel):
     msg: str | None
 
 
-class UptimeKumaPublisher:
+class _UptimeKumaPublisher:
     """Uptime Kuma publisher implementing the publisher protocol."""
+
+    name: ClassVar[str] = "uptime_kuma"
 
     def __init__(self) -> None:
         """Initialize an UptimeKumaPublisher instance."""

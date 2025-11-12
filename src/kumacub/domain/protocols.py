@@ -7,16 +7,3 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 """KumaCub domain protocols."""
-
-from typing import Protocol
-
-import pydantic
-
-from kumacub.domain import models
-
-
-class ResultTranslatorP(Protocol):
-    """Translator protocol for mapping parsed models to domain models."""
-
-    def translate(self, parsed: pydantic.BaseModel) -> models.CheckResult:
-        """Map a parser-specific model to a domain CheckResult."""

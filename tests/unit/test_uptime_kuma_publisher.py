@@ -21,9 +21,9 @@ class TestUptimeKumaPublisher:
     """Tests for UptimeKumaPublisher class."""
 
     @pytest.fixture
-    def uptime_kuma_publisher(self) -> uptime_kuma.UptimeKumaPublisher:
+    def uptime_kuma_publisher(self) -> uptime_kuma._UptimeKumaPublisher:
         """Return a UptimeKumaPublisher instance for testing."""
-        return uptime_kuma.UptimeKumaPublisher()
+        return uptime_kuma._UptimeKumaPublisher()
 
     @pytest.fixture
     def publish_args(self) -> uptime_kuma.UptimeKumaPublishArgs:
@@ -38,7 +38,7 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_success(
-        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma._UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test successful publish."""
         with respx.mock() as mock:
@@ -56,7 +56,7 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_http_error_with_message(
-        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma._UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with HTTP error that includes a message (no exception raised)."""
         with respx.mock() as mock:
@@ -70,7 +70,7 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_http_error_no_message(
-        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma._UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with HTTP error that doesn't include a message (no exception raised)."""
         with respx.mock() as mock:
@@ -83,7 +83,7 @@ class TestUptimeKumaPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_request_error(
-        self, uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
+        self, uptime_kuma_publisher: uptime_kuma._UptimeKumaPublisher, publish_args: uptime_kuma.UptimeKumaPublishArgs
     ) -> None:
         """Test publish with request error (no exception raised)."""
         with respx.mock() as mock:
@@ -100,7 +100,7 @@ class TestUptimeKumaPublisher:
     @pytest.mark.asyncio
     async def test_publish_parameters_serialization(
         self,
-        uptime_kuma_publisher: uptime_kuma.UptimeKumaPublisher,
+        uptime_kuma_publisher: uptime_kuma._UptimeKumaPublisher,
         status: Literal["up", "down"],
         msg: str,
         ping: float | None,

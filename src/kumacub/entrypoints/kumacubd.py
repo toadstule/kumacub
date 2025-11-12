@@ -22,15 +22,13 @@ Notes:
 from __future__ import annotations
 
 import asyncio
-import os
 import signal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from kumacub import config
 from kumacub.application.services import runner
-from kumacub.infrastructure.executors.process_executor import ProcessExecutor
-from kumacub.infrastructure.publishers.kuma_publisher import KumaClient
+from kumacub.infrastructure import executors, publishers
 from kumacub.logging_config import configure_logging
 
 
@@ -53,9 +51,8 @@ async def _main() -> None:
         loop.add_signal_handler(sig, stop_event.set)
 
     # Wire infrastructure
-    kuma_url = os.environ.get("UPTIME_KUMA_URL", "http://localhost:3001")
-    kuma_client = KumaClient(url=kuma_url)
-    process_executor = ProcessExecutor()
+    kuma_client = publishers.get_publisher(name="uptime_kuma")
+    process_executor = executors.get_executor("process")
     runner_ = runner.Runner(kuma_client=kuma_client, process_executor=process_executor)
 
     scheduler = AsyncIOScheduler()

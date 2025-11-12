@@ -12,7 +12,6 @@
 import pytest
 
 from kumacub.infrastructure import parsers
-from kumacub.infrastructure.parsers import nagios
 
 
 class TestParserFactory:
@@ -24,4 +23,4 @@ class TestParserFactory:
             parsers.get_parser(name="unknown")
 
         parser = parsers.get_parser(name="nagios")
-        assert isinstance(parser, nagios.NagiosParser)
+        assert parser.name == "nagios"

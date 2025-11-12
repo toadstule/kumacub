@@ -24,4 +24,4 @@ class TestResultTranslatorFactory:
             result_translators.get_result_translator(name="unknown")
 
         translator = result_translators.get_result_translator(name="nagios")
-        assert isinstance(translator, nagios.NagiosMapper)
+        assert isinstance(translator, nagios._NagiosMapper)

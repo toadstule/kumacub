@@ -11,12 +11,12 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal
+from typing import ClassVar, Final, Literal
 
 import pydantic
 
 
-class Result(pydantic.BaseModel):
+class NagiosResult(pydantic.BaseModel):
     """Nagios-style check result."""
 
     service_state: Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]
@@ -26,8 +26,10 @@ class Result(pydantic.BaseModel):
     service_performance_data: str
 
 
-class NagiosParser:
+class _NagiosParser:
     """Output parser for Nagios-compatible checks."""
+
+    name: ClassVar[str] = "nagios"
 
     _STATE_MAP: Final[dict[int, Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]]] = {
         0: "OK",
@@ -36,7 +38,7 @@ class NagiosParser:
         3: "UNKNOWN",
     }
 
-    def parse(self, output: str, exit_code: int = 0) -> Result:
+    def parse(self, output: str, exit_code: int = 0) -> NagiosResult:
         """Parse the raw output into the parser-specific model."""
         service_output = ""
         long_service_output = ""
@@ -73,7 +75,7 @@ class NagiosParser:
             service_performance_data = " ".join(filter(None, performance_data_parts))
             long_service_output = "\n".join(long_text_lines)
 
-        return Result(
+        return NagiosResult(
             service_state=self._STATE_MAP.get(exit_code, "UNKNOWN"),
             exit_code=exit_code,
             service_output=service_output,

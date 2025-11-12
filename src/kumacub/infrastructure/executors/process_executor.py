@@ -11,6 +11,7 @@
 
 import asyncio
 import time
+from typing import ClassVar
 
 import structlog
 
@@ -19,8 +20,10 @@ import kumacub.infrastructure.parsers as infra_parsers
 from kumacub.domain import models
 
 
-class ProcessExecutor:
+class _ProcessExecutor:
     """Process executor."""
+
+    name: ClassVar[str] = "process"
 
     def __init__(self) -> None:
         """Initialize a ProcessExecutor instance."""

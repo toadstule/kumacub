@@ -9,19 +9,28 @@
 
 """Publishers for different monitoring services."""
 
-from typing import Protocol
+from __future__ import annotations
 
-import pydantic
+from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
-from .uptime_kuma import UptimeKumaPublishArgs, UptimeKumaPublisher
+from .uptime_kuma import UptimeKumaPublishArgs, _UptimeKumaPublisher
 
-_REGISTRY = {"uptime_kuma": UptimeKumaPublisher}
+if TYPE_CHECKING:
+    import pydantic
 
-__all__ = ["PublisherP", "UptimeKumaPublishArgs", "UptimeKumaPublisher", "get_publisher"]
+# Export all arg models.
+__all__ = ["PublisherP", "UptimeKumaPublishArgs", "get_publisher"]
+
+# Extend this to add new publishers.
+_PUBLISHERS: Final[list[type[PublisherP]]] = [_UptimeKumaPublisher]
+
+_REGISTRY: Final[dict[str, type[PublisherP]]] = {p.name: p for p in _PUBLISHERS}
 
 
 class PublisherP(Protocol):
     """Protocol for publishing check results to external services."""
+
+    name: ClassVar[str] = ""
 
     async def publish(self, args: pydantic.BaseModel) -> None:
         """Publish check results to the external service.

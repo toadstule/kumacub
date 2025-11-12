@@ -9,10 +9,35 @@
 
 """Application result-translator package."""
 
-from kumacub.application.result_translators.nagios import NagiosMapper
-from kumacub.domain.protocols import ResultTranslatorP
+from __future__ import annotations
 
-_REGISTRY = {"nagios": NagiosMapper}
+from typing import TYPE_CHECKING, ClassVar, Final, Protocol
+
+from .nagios import _NagiosMapper
+
+if TYPE_CHECKING:
+    import pydantic
+
+    from kumacub.domain import models
+
+
+__all__ = ["ResultTranslatorP", "get_result_translator"]
+
+
+# Extend this to add new parsers.
+_RESULT_TRANSLATORS: Final[list[type[ResultTranslatorP]]] = [_NagiosMapper]
+
+_REGISTRY: Final[dict[str, type[ResultTranslatorP]]] = {p.name: p for p in _RESULT_TRANSLATORS}
+
+
+class ResultTranslatorP(Protocol):
+    """Translator protocol for mapping parsed models to domain models."""
+
+    name: ClassVar[str] = ""
+
+    @staticmethod
+    def translate(parsed: pydantic.BaseModel) -> models.CheckResult:
+        """Map a parser-specific model to a domain CheckResult."""
 
 
 def get_result_translator(name: str) -> ResultTranslatorP:

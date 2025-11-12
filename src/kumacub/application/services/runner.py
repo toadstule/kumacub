@@ -9,17 +9,15 @@
 
 """KumaCub application services runner."""
 
-from kumacub.infrastructure.publishers.kuma_publisher import KumaClient
-
 from kumacub.domain import models
-from kumacub.infrastructure.executors.process_executor import ProcessExecutor
-from kumacub.infrastructure.publishers import kuma_publisher as kuma_models
+from kumacub.infrastructure import executors, publishers
+from kumacub.infrastructure.publishers.uptime_kuma import UptimeKumaPublishArgs
 
 
 class Runner:
     """Runner service."""
 
-    def __init__(self, kuma_client: KumaClient, process_executor: ProcessExecutor) -> None:
+    def __init__(self, kuma_client: publishers.PublisherP, process_executor: executors.ExecutorP) -> None:
         """Initialize a Runner instance."""
         self._kuma_client = kuma_client
         self._process_executor = process_executor
@@ -28,7 +26,7 @@ class Runner:
         """Run a check and return the result."""
         return await self._process_executor.run(check=check)
 
-    async def push(self, push_token: str, check_result: models.CheckResult) -> kuma_models.PushResponse:
+    async def push(self, push_token: str, check_result: models.CheckResult) -> None:
         """Push a check result to Uptime Kuma.
 
         Args:
@@ -38,9 +36,11 @@ class Runner:
         Returns:
             PushResponse: Response from Uptime Kuma.
         """
-        params = kuma_models.PushParameters(
+        params = UptimeKumaPublishArgs(
+            url="http://localhost:3001",
+            push_token=push_token,
             status=check_result.status,
             msg=check_result.msg,
             ping=check_result.ping,
         )
-        return await self._kuma_client.push(push_token=push_token, parameters=params)
+        return await self._kuma_client.publish(args=params)
