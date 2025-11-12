@@ -16,8 +16,15 @@ from typing import ClassVar, Final, Literal
 import pydantic
 
 
-class NagiosResult(pydantic.BaseModel):
-    """Nagios-style check result."""
+class NagiosParserArgs(pydantic.BaseModel):
+    """Nagios-style check args."""
+
+    exit_code: int
+    output: str
+
+
+class NagiosParserOutput(pydantic.BaseModel):
+    """Nagios-style check output."""
 
     service_state: Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]
     exit_code: int
@@ -38,13 +45,13 @@ class _NagiosParser:
         3: "UNKNOWN",
     }
 
-    def parse(self, output: str, exit_code: int = 0) -> NagiosResult:
+    def parse(self, args: NagiosParserArgs) -> NagiosParserOutput:
         """Parse the raw output into the parser-specific model."""
         service_output = ""
         long_service_output = ""
         service_performance_data = ""
 
-        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        lines = [line.strip() for line in args.output.splitlines() if line.strip()]
         if lines:
             performance_data = ""
             service_output = lines.pop(0)
@@ -75,9 +82,9 @@ class _NagiosParser:
             service_performance_data = " ".join(filter(None, performance_data_parts))
             long_service_output = "\n".join(long_text_lines)
 
-        return NagiosResult(
-            service_state=self._STATE_MAP.get(exit_code, "UNKNOWN"),
-            exit_code=exit_code,
+        return NagiosParserOutput(
+            service_state=self._STATE_MAP.get(args.exit_code, "UNKNOWN"),
+            exit_code=args.exit_code,
             service_output=service_output,
             long_service_output=long_service_output,
             service_performance_data=service_performance_data,

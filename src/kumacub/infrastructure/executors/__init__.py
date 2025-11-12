@@ -11,14 +11,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Final, Protocol
+from typing import ClassVar, Final, Protocol
 
-from .process_executor import _ProcessExecutor
+from .process_executor import ProcessExecutorArgs, ProcessExecutorOutput, _ProcessExecutor
 
-if TYPE_CHECKING:
-    from kumacub.domain import models
-
-__all__ = ["ExecutorP", "get_executor"]
+# Export all args and output models.
+__all__ = ["ExecutorP", "ProcessExecutorArgs", "ProcessExecutorOutput", "get_executor"]
 
 # Extend this to add new executors.
 _EXECUTORS: Final[list[type[ExecutorP]]] = [_ProcessExecutor]
@@ -29,17 +27,10 @@ _REGISTRY: Final[dict[str, type[ExecutorP]]] = {p.name: p for p in _EXECUTORS}
 class ExecutorP(Protocol):
     """Protocol for executing checks and returning results."""
 
-    name: ClassVar[str] = ""
+    name: ClassVar[str]
 
-    async def run(self, check: models.Check) -> models.CheckResult:
-        """Execute a check and return the result.
-
-        Args:
-            check: The check to execute
-
-        Returns:
-            The result of the check execution
-        """
+    async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
+        """Execute a check and return the result."""
 
 
 def get_executor(name: str) -> ExecutorP:

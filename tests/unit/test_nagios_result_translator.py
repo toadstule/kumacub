@@ -25,7 +25,7 @@ class TestNagiosResultTranslator:
 
     def test_translate_up_status(self, translator: result_translators.ResultTranslatorP) -> None:
         """Exit code 0 should result in status 'up' and msg from service_output."""
-        parsed = parsers.NagiosResult(
+        parsed = parsers.NagiosParserOutput(
             service_state="OK",
             exit_code=0,
             service_output="All good",
@@ -38,7 +38,7 @@ class TestNagiosResultTranslator:
 
     def test_translate_down_status(self, translator: result_translators.ResultTranslatorP) -> None:
         """Non-zero exit code should result in status 'down'."""
-        parsed = parsers.NagiosResult(
+        parsed = parsers.NagiosParserOutput(
             service_state="CRITICAL",
             exit_code=2,
             service_output="Disk full",

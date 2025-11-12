@@ -53,7 +53,7 @@ async def _main() -> None:
     # Wire infrastructure
     kuma_client = publishers.get_publisher(name="uptime_kuma")
     process_executor = executors.get_executor("process")
-    runner_ = runner.Runner(kuma_client=kuma_client, process_executor=process_executor)
+    runner_ = runner.Runner(publisher=kuma_client, process_executor=process_executor)
 
     scheduler = AsyncIOScheduler()
     scheduler.start()

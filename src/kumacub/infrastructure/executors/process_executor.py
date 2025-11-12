@@ -13,11 +13,26 @@ import asyncio
 import time
 from typing import ClassVar
 
+import pydantic
 import structlog
 
-import kumacub.application.result_translators as rt_translators
-import kumacub.infrastructure.parsers as infra_parsers
-from kumacub.domain import models
+
+class ProcessExecutorArgs(pydantic.BaseModel):
+    """Process executor args."""
+
+    name: str
+    command: str
+    args: list[str] = []
+    env: dict[str, str] = {}
+
+
+class ProcessExecutorOutput(pydantic.BaseModel):
+    """Process executor output."""
+
+    stdout: str
+    stderr: str
+    exit_code: int
+    elapsed_time: float
 
 
 class _ProcessExecutor:
@@ -30,55 +45,34 @@ class _ProcessExecutor:
         self._logger = structlog.get_logger()
         self._start_time: float | None = None
 
-    async def run(self, check: models.Check) -> models.CheckResult:
-        """Run a check and return the result.
-
-        Args:
-            check: The check to run.
-
-        Returns:
-            The result of the check.
-        """
-        self._logger.info("Running check: %s", check.name)
+    async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
+        """Run a check and return the result."""
+        self._logger.info("Running check: %s", args.name)
 
         self._timer()
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                check.command,
-                *check.args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=check.env,
-            )
-            stdout_data, stderr_data = await proc.communicate()
-            stdout = stdout_data.decode().strip()
-            stderr = stderr_data.decode().strip()
+        proc = await asyncio.create_subprocess_exec(
+            args.command,
+            *args.args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=args.env,
+        )
+        stdout_data, stderr_data = await proc.communicate()
+        stdout = stdout_data.decode().strip()
+        stderr = stderr_data.decode().strip()
 
-            if proc.returncode != 0:
-                self._logger.warning("Check %s failed with exit code %s", check.name, proc.returncode)
-            else:
-                self._logger.info("Check %s completed with exit code %s", check.name, proc.returncode)
-            if stdout:
-                self._logger.debug("Check %s stdout: %s", check.name, stdout)
-            if stderr:
-                self._logger.warning("Check %s stderr: %s", check.name, stderr)
+        if proc.returncode != 0:
+            self._logger.warning("Check %s failed with exit code %s", args.name, proc.returncode)
+        else:
+            self._logger.info("Check %s completed with exit code %s", args.name, proc.returncode)
+        if stdout:
+            self._logger.debug("Check %s stdout: %s", args.name, stdout)
+        if stderr:
+            self._logger.warning("Check %s stderr: %s", args.name, stderr)
 
-            # Parse raw output (infrastructure) then map to domain (application)
-            exit_code = proc.returncode or 0  # Default to 0 if None
-            parser = infra_parsers.get_parser(name=check.type)
-            parsed = parser.parse(exit_code=exit_code, output=stdout)
-            result: models.CheckResult = rt_translators.get_result_translator(name=check.type).translate(parsed=parsed)
-            result.ping = self._timer()
-
-        except Exception as e:
-            self._logger.exception("Error running check %s", check.name)
-            return models.CheckResult(
-                status="down",
-                msg=f"Error executing check: {e!s}",
-                ping=self._timer(),
-            )
-
-        return result
+        return ProcessExecutorOutput(
+            stdout=stdout, stderr=stderr, exit_code=proc.returncode or 0, elapsed_time=self._timer()
+        )
 
     def _timer(self) -> float:
         """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""

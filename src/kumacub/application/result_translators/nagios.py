@@ -28,7 +28,7 @@ class _NagiosMapper:
     @staticmethod
     def translate(parsed: pydantic.BaseModel) -> models.CheckResult:
         """Map a parser-specific model to a domain CheckResult."""
-        r = cast("parsers.NagiosResult", parsed)
+        r = cast("parsers.NagiosParserOutput", parsed)
         return models.CheckResult(
             status="up" if r.exit_code == 0 else "down",
             msg=r.service_output,

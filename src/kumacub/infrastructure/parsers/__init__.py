@@ -13,14 +13,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
-from .nagios import NagiosResult, _NagiosParser
+from .nagios import NagiosParserArgs, NagiosParserOutput, _NagiosParser
 
 if TYPE_CHECKING:
     import pydantic
 
 
-# Export all result models.
-__all__ = ["NagiosResult", "ParserP", "get_parser"]
+# Export all args and output models.
+__all__ = ["NagiosParserArgs", "NagiosParserOutput", "ParserP", "get_parser"]
 
 # Extend this to add new parsers.
 _PARSERS: Final[list[type[ParserP]]] = [_NagiosParser]
@@ -31,18 +31,10 @@ _REGISTRY: Final[dict[str, type[ParserP]]] = {p.name: p for p in _PARSERS}
 class ParserP(Protocol):
     """Protocol for converting raw outputs into structured models."""
 
-    name: ClassVar[str] = ""
+    name: ClassVar[str]
 
-    def parse(self, output: str, exit_code: int = 0) -> pydantic.BaseModel:
-        """Parse raw process output into a structured model.
-
-        Args:
-            output: The raw output from the process
-            exit_code: The exit code from the process (default: 0)
-
-        Returns:
-            A pydantic model containing the parsed data
-        """
+    def parse(self, args: NagiosParserArgs) -> pydantic.BaseModel:
+        """Parse raw process output into a structured model."""
 
 
 def get_parser(name: str) -> ParserP:

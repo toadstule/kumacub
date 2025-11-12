@@ -9,38 +9,38 @@
 
 """KumaCub application services runner."""
 
+from kumacub.application import result_translators
 from kumacub.domain import models
-from kumacub.infrastructure import executors, publishers
-from kumacub.infrastructure.publishers.uptime_kuma import UptimeKumaPublishArgs
+from kumacub.infrastructure import executors, parsers, publishers
 
 
 class Runner:
-    """Runner service."""
+    """Runner service.
 
-    def __init__(self, kuma_client: publishers.PublisherP, process_executor: executors.ExecutorP) -> None:
+    Needs:
+    - executor
+    - parser
+    - translator
+    - publisher
+
+    """
+
+    def __init__(
+        self,
+        executor: executors.ExecutorP,
+        parser: parsers.ParserP,
+        result_translator: result_translators.ResultTranslatorP,
+        publisher: publishers.PublisherP,
+    ) -> None:
         """Initialize a Runner instance."""
-        self._kuma_client = kuma_client
-        self._process_executor = process_executor
+        self._executor = executor
+        self._parser = parser
+        self._result_translator = result_translator
+        self._publisher = publisher
 
-    async def run(self, check: models.Check) -> models.CheckResult:
-        """Run a check and return the result."""
-        return await self._process_executor.run(check=check)
-
-    async def push(self, push_token: str, check_result: models.CheckResult) -> None:
-        """Push a check result to Uptime Kuma.
-
-        Args:
-            push_token: The Uptime Kuma push token for this monitor.
-            check_result: The result produced by running the check.
-
-        Returns:
-            PushResponse: Response from Uptime Kuma.
-        """
-        params = UptimeKumaPublishArgs(
-            url="http://localhost:3001",
-            push_token=push_token,
-            status=check_result.status,
-            msg=check_result.msg,
-            ping=check_result.ping,
-        )
-        return await self._kuma_client.publish(args=params)
+    async def run(self, check: models.Check) -> None:
+        """Execute a check and publish the result."""
+        raw_result = await self._executor.run(check=check)
+        parsed_result = await self._parser.parse(raw_check_result)
+        translated_result: self._result_translator.translate(parsed_result)
+        await self._publisher.publish(args=translated_result)
