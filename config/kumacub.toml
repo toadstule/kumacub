@@ -1,0 +1,35 @@
+# KumaCub Configuration
+
+# Logging configuration
+[log]
+level = "INFO"  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+structured = true  # Whether to use structured (JSON) logging
+
+# Checks configuration
+[[checks]]
+name = "kernel version"
+type = "nagios"
+command = "/home/steve/scm/kumacub/kernel_version.sh"
+interval = 86400
+
+[[checks]]
+name = "disk usage"
+type = "nagios"
+command = "/usr/bin/df"
+args = ["-h"]
+interval = 60
+
+[[checks]]
+name = "my env"
+type = "nagios"
+command = "/usr/bin/env"
+env = { YOUR_MOM="goes to college", YOUR_DAD="goes to work" }
+interval = 300
+
+[[checks]]
+name = "busted"
+type = "nagios"
+command = "/bin/sh"
+args = ["-c", "false"]
+env = { YOUR_MOM="goes to college", YOUR_DAD="goes to work" }
+interval = 300

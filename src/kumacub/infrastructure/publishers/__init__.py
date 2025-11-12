@@ -7,27 +7,12 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
+"""KumaCub infrastructure publishers."""
 
-"""KumaCub types."""
+from . import uptime_kuma  # noqa: F401 - ensure registration side-effect
+from .publisher import Publisher, get_publisher  # re-export base API
 
-from typing import Literal
-
-import pydantic
-
-
-class Check(pydantic.BaseModel):
-    """KumaCub Check."""
-
-    name: str
-    type: Literal["nagios"]
-    command: str
-    args: list[str] = []
-    env: dict[str, str] = {}
-
-
-class CheckResult(pydantic.BaseModel):
-    """KumaCub Check Result."""
-
-    status: Literal["", "down", "up"] = "up"
-    msg: str = pydantic.Field(default="", max_length=250)
-    ping: pydantic.PositiveFloat | None = None
+__all__ = [
+    "Publisher",
+    "get_publisher",
+]

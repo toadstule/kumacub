@@ -24,6 +24,7 @@ classifiers = [
 ]
 description = "Run local checks; push results to Uptime Kuma"
 dependencies = [
+    "apscheduler>=3.11.1",
     "httpx>=0.28.1",
     "pydantic>=2.12.4",
     "pydantic-settings>=2.11.0",
@@ -78,6 +79,7 @@ convention = "google"
 source = ["kumacub"]
 omit = [
     "*/kumacub/entrypoints/*",
+    "*/kumacub/domain/protocols.py",
 ]
 
 [tool.coverage.report]

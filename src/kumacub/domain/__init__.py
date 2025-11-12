@@ -7,13 +7,4 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Uptime Kuma service."""
-
-from .models import PushParameters, PushResponse
-from .service import KumaSvc
-
-__all__ = [
-    "KumaSvc",
-    "PushParameters",
-    "PushResponse",
-]
+"""KumaCub domain models."""

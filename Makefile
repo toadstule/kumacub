@@ -69,7 +69,7 @@ install: venv-check $(WHEEL)  ## Install the package (locally).
 lint: format  ## Lint the code.
 	@$(RUFF) format --check $(PY_FILES)
 	@$(RUFF) check $(PY_FILES)
-	@$(MYPY) --non-interactive $(PY_FILES)
+	@$(MYPY) --non-interactive --no-pretty $(PY_FILES)
 
 .PHONY: showvars
 showvars:  ## Display variables available in the Makefile.

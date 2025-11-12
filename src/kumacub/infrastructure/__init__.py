@@ -7,10 +7,4 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Check runner service."""
-
-from .service import RunnerSvc
-
-__all__ = [
-    "RunnerSvc",
-]
+"""KumaCub infrastructure."""

@@ -7,26 +7,27 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Check runner service."""
+"""Process executor."""
 
 import asyncio
 import time
 
 import structlog
 
-from kumacub import types
-from kumacub.library import parsers
+import kumacub.application.result_translators as app_translators
+import kumacub.infrastructure.parsers as infra_parsers
+from kumacub.domain import models
 
 
-class RunnerSvc:
-    """Check runner service."""
+class ProcessExecutor:
+    """Process executor."""
 
     def __init__(self) -> None:
-        """Initialize a RunnerSvc instance."""
+        """Initialize a ProcessExecutor instance."""
         self._logger = structlog.get_logger()
         self._start_time: float | None = None
 
-    async def run(self, check: types.Check) -> types.CheckResult:
+    async def run(self, check: models.Check) -> models.CheckResult:
         """Run a check and return the result.
 
         Args:
@@ -44,27 +45,31 @@ class RunnerSvc:
                 *check.args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env={"PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", **check.env},
+                env=check.env,
             )
             stdout_data, stderr_data = await proc.communicate()
             stdout = stdout_data.decode().strip()
             stderr = stderr_data.decode().strip()
 
-            self._logger.debug("Check %s completed with exit code %s", check.name, proc.returncode)
+            if proc.returncode != 0:
+                self._logger.warning("Check %s failed with exit code %s", check.name, proc.returncode)
+            else:
+                self._logger.info("Check %s completed with exit code %s", check.name, proc.returncode)
             if stdout:
                 self._logger.debug("Check %s stdout: %s", check.name, stdout)
             if stderr:
                 self._logger.warning("Check %s stderr: %s", check.name, stderr)
 
-            # Determine service state from exit code
+            # Parse raw output (infrastructure) then map to domain (application)
             exit_code = proc.returncode or 0  # Default to 0 if None
-            parser = parsers.Parser.factory(check_type=check.type)
-            result = parser.map(check_result=parser.parse(exit_code=exit_code, output=stdout))
+            parser = infra_parsers.get_parser(check_type=check.type)
+            parsed = parser.parse(exit_code=exit_code, output=stdout)
+            result = app_translators.translate(check_type=check.type, parsed=parsed)
             result.ping = self._timer()
 
         except Exception as e:
             self._logger.exception("Error running check %s", check.name)
-            return types.CheckResult(
+            return models.CheckResult(
                 status="down",
                 msg=f"Error executing check: {e!s}",
                 ping=self._timer(),

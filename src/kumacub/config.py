@@ -21,6 +21,8 @@ from typing import Annotated
 import pydantic
 import pydantic_settings
 
+from kumacub.domain import models  # noqa: TC001
+
 
 class LogSettings(pydantic.BaseModel):
     """Logging configuration."""
@@ -42,6 +44,9 @@ class Settings(pydantic_settings.BaseSettings):
 
     # App identity
     service_name: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "kumacub"
+
+    # Checks configuration
+    checks: list[models.Check] = []
 
     # Logging configuration
     log: LogSettings = LogSettings()

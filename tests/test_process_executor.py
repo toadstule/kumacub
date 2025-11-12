@@ -7,32 +7,34 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for RunnerSvc class."""
+"""Tests for ProcessExecutor class."""
 
 import asyncio
 from unittest import mock
 
 import pytest
 
-from kumacub import types
-from kumacub.services.runner_svc import RunnerSvc
+from kumacub.domain import models
+from kumacub.infrastructure.executors.process_executor import ProcessExecutor
 
 
-class TestRunnerSvc:
-    """Tests for RunnerSvc class."""
+class TestProcessExecutor:
+    """Tests for ProcessExecutor class."""
 
     @pytest.fixture
-    def runner(self, monkeypatch: pytest.MonkeyPatch) -> RunnerSvc:
-        """Return a RunnerSvc instance with mocked logger."""
+    def runner(self, monkeypatch: pytest.MonkeyPatch) -> ProcessExecutor:
+        """Return a ProcessExecutor instance with mocked logger."""
         # Patch the logger to avoid issues with test environment
         mock_logger = mock.MagicMock()
-        monkeypatch.setattr("kumacub.services.runner_svc.service.structlog.get_logger", lambda: mock_logger)
-        return RunnerSvc()
+        monkeypatch.setattr(
+            "kumacub.infrastructure.executors.process_executor.structlog.get_logger", lambda: mock_logger
+        )
+        return ProcessExecutor()
 
     @pytest.fixture
-    def success_check(self) -> types.Check:
+    def success_check(self) -> models.Check:
         """Return a check that will succeed."""
-        return types.Check(
+        return models.Check(
             name="success_check",
             type="nagios",
             command="echo",
@@ -40,9 +42,9 @@ class TestRunnerSvc:
         )
 
     @pytest.fixture
-    def error_check(self) -> types.Check:
+    def error_check(self) -> models.Check:
         """Return a check that will fail with non-zero exit code."""
-        return types.Check(
+        return models.Check(
             name="error_check",
             type="nagios",
             command="false",
@@ -50,9 +52,9 @@ class TestRunnerSvc:
         )
 
     @pytest.fixture
-    def not_found_check(self) -> types.Check:
+    def not_found_check(self) -> models.Check:
         """Return a check with a non-existent command."""
-        return types.Check(
+        return models.Check(
             name="not_found_check",
             type="nagios",
             command="non_existent_command",
@@ -60,7 +62,7 @@ class TestRunnerSvc:
         )
 
     @pytest.mark.asyncio
-    async def test_run_success(self, runner: RunnerSvc, success_check: types.Check) -> None:
+    async def test_run_success(self, runner: ProcessExecutor, success_check: models.Check) -> None:
         """Test running a successful command."""
         result = await runner.run(success_check)
 
@@ -70,7 +72,7 @@ class TestRunnerSvc:
         assert result.ping > 0
 
     @pytest.mark.asyncio
-    async def test_run_error(self, runner: RunnerSvc, error_check: types.Check) -> None:
+    async def test_run_error(self, runner: ProcessExecutor, error_check: models.Check) -> None:
         """Test running a command that returns non-zero exit code."""
         result = await runner.run(error_check)
 
@@ -83,8 +85,8 @@ class TestRunnerSvc:
     @pytest.mark.asyncio
     async def test_run_command_not_found(
         self,
-        runner: RunnerSvc,
-        not_found_check: types.Check,
+        runner: ProcessExecutor,
+        not_found_check: models.Check,
     ) -> None:
         """Test running a non-existent command."""
         result = await runner.run(not_found_check)
@@ -97,8 +99,8 @@ class TestRunnerSvc:
     @pytest.mark.asyncio
     async def test_run_timeout(
         self,
-        runner: RunnerSvc,
-        success_check: types.Check,
+        runner: ProcessExecutor,
+        success_check: models.Check,
     ) -> None:
         """Test command timeout handling."""
         with mock.patch.object(
@@ -116,8 +118,8 @@ class TestRunnerSvc:
     @pytest.mark.asyncio
     async def test_run_with_environment(
         self,
-        runner: RunnerSvc,
-        success_check: types.Check,
+        runner: ProcessExecutor,
+        success_check: models.Check,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test running a command with environment variables."""
@@ -137,13 +139,12 @@ class TestRunnerSvc:
             env = kwargs.get("env", {})
             assert env.get("CUSTOM_VAR") == "custom_value"
             assert "TEST_VAR" not in env  # Shouldn't inherit from parent env
-            assert "PATH" in env  # Should have PATH set
 
     @pytest.mark.asyncio
     async def test_run_with_stderr(
         self,
-        runner: RunnerSvc,
-        success_check: types.Check,
+        runner: ProcessExecutor,
+        success_check: models.Check,
     ) -> None:
         """Test running a command that writes to stderr."""
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
