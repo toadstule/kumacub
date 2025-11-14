@@ -6,12 +6,12 @@ level = "INFO"  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 structured = true  # Whether to use structured (JSON) logging
 
 # Checks configuration
-[[checks]]
-name = "kernel version"
-executor.command = "/home/steve/scm/kumacub/kernel_version.sh"
-publisher.url = "https://uptime-kuma.jibson.com"
-publisher.push_token = "eGsV3npw5qjzKpwLEVx6xOmerMcIUTof"
-schedule.interval = 23
+#[[checks]]
+#name = "kernel version"
+#executor.command = "/home/steve/scm/kumacub/kernel_version.sh"
+#publisher.url = "https://uptime-kuma.jibson.com"
+#publisher.push_token = "eGsV3npw5qjzKpwLEVx6xOmerMcIUTof"
+#schedule.interval = 23
 
 [[checks]]
 name = "disk usage"

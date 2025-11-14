@@ -28,10 +28,7 @@ class Runner:
     """
 
     def __init__(
-        self,
-        executor: executors.ExecutorP,
-        parser: parsers.ParserP,
-        publisher: publishers.PublisherP,
+        self, executor: executors.ExecutorP, parser: parsers.ParserP, publisher: publishers.PublisherP
     ) -> None:
         """Initialize a Runner instance."""
         self._executor = executor
