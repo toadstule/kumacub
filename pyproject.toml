@@ -29,7 +29,6 @@ dependencies = [
     "pydantic>=2.12.4",
     "pydantic-settings>=2.11.0",
     "structlog>=25.5.0",
-    "svcs>=25.1.0",
 ]
 name = "kumacub"
 readme = "README.md"
@@ -79,7 +78,6 @@ convention = "google"
 source = ["kumacub"]
 omit = [
     "*/kumacub/entrypoints/*",
-    "*/kumacub/domain/protocols.py",
 ]
 
 [tool.coverage.report]
