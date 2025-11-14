@@ -9,7 +9,7 @@
 
 """Uptime Kuma publisher."""
 
-from typing import ClassVar, Literal, cast
+from typing import ClassVar, Literal
 
 import httpx
 import pydantic
@@ -19,6 +19,7 @@ import structlog
 class UptimeKumaPublishArgs(pydantic.BaseModel):
     """Arguments for the publisher."""
 
+    id: str
     url: str
     push_token: pydantic.SecretStr
     status: Literal["", "down", "up"] = ""
@@ -35,17 +36,16 @@ class _UptimeKumaPublisher:
         """Initialize an UptimeKumaPublisher instance."""
         self._logger = structlog.get_logger()
 
-    async def publish(self, args: pydantic.BaseModel) -> None:
+    async def publish(self, args: UptimeKumaPublishArgs) -> None:
         """Publish a check result to Uptime Kuma."""
         # Cast to specific args type for this publisher
-        typed_args = cast("UptimeKumaPublishArgs", args)
-        url = f"{typed_args.url}/api/push/{typed_args.push_token.get_secret_value()}"
-        fields = {"status", "msg", "ping"}
+        url = f"{args.url}/api/push/{args.push_token.get_secret_value()}"
         params = {
             k: v
-            for k, v in typed_args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items()
-            if k in fields
+            for k, v in args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items()
+            if k in {"status", "msg", "ping"}
         }
+        self._logger.debug("Pushing check result to Uptime Kuma", id=args.id, url=url, params=params)
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
@@ -56,15 +56,12 @@ class _UptimeKumaPublisher:
                     timeout=10.0,
                 )
                 response.raise_for_status()
-                self._logger.debug("Successfully pushed check result to Uptime Kuma")
-                return  # PushResponse(ok=True, msg=None)
+                self._logger.debug("Successfully pushed check result to Uptime Kuma", id=args.id)
 
         except httpx.HTTPStatusError as e:
             error_msg = e.response.json().get("msg", f"Server returned error: {e.response.status_code}")
-            self._logger.warning("Failed to push check result: %s", error_msg)
-            return  # PushResponse(ok=False, msg=error_msg)
+            self._logger.warning("Failed to push check result: %s", error_msg, id=args.id)
 
         except httpx.RequestError as e:
             error_msg = f"Request failed: {e!s}"
-            self._logger.warning("Failed to push check result: %s", error_msg)
-            return  # PushResponse(ok=False, msg=error_msg)
+            self._logger.warning("Failed to push check result: %s", error_msg, id=args.id)

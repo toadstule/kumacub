@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 __all__ = ["PublisherP", "UptimeKumaPublishArgs", "get_publisher"]
 
 # Extend this to add new publishers.
-_PUBLISHERS: Final[list[type[PublisherP]]] = [_UptimeKumaPublisher]
+_PUBLISHERS: Final[list[type[PublisherP]]] = [_UptimeKumaPublisher]  # type: ignore[list-item]
 
 _REGISTRY: Final[dict[str, type[PublisherP]]] = {p.name: p for p in _PUBLISHERS}
 

@@ -30,6 +30,7 @@ class TestUptimeKumaPublisher:
     def publish_args(self) -> uptime_kuma.UptimeKumaPublishArgs:
         """Return sample publish args for testing."""
         return uptime_kuma.UptimeKumaPublishArgs(
+            id="test-check",
             url="http://ignored",
             push_token=pydantic.SecretStr("test-token"),
             status="up",
@@ -111,6 +112,7 @@ class TestUptimeKumaPublisher:
         with respx.mock() as mock:
             # Create parameters and make the request
             args = uptime_kuma.UptimeKumaPublishArgs(
+                id="test-check",
                 url="http://ignored",
                 push_token=pydantic.SecretStr("test-token"),
                 status=status,

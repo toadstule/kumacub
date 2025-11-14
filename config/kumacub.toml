@@ -8,8 +8,9 @@ structured = true  # Whether to use structured (JSON) logging
 # Checks configuration
 [[checks]]
 name = "disk usage"
-executor = { command = "echo", args = ["-n", "OK"] }
-publisher = { url = "https://uptime-kuma.jibson.com", push_token = "V0LPCbmhJ1?" }
+executor = { command = "echo", args = ["-n", "OK - Test is running"] }
+publisher = { url = "https://uptime-kuma.jibson.com", push_token = "eGsV3npw5qjzKpwLEVx6xOmerMcIUTof" }
+schedule = { interval = 30 }
 
 #[[checks]]
 #name = "my env"

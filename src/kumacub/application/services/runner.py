@@ -57,6 +57,7 @@ class Runner:
         parser_output = self._parser.parse(parser_args)
         parser_output = cast("parsers.NagiosParserOutput", parser_output)
         publisher_args = publishers.UptimeKumaPublishArgs(
+            id=check.name,
             url=check.publisher.url,
             push_token=check.publisher.push_token,
             status="up" if parser_output.exit_code == 0 else "down",
