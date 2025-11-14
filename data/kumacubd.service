@@ -1,12 +1,11 @@
 [Unit]
 Description=KumaCub - Run local checks and push results to Uptime Kuma
-Documentation=https://github.com/yourusername/kumacub
+Documentation=https://github.com/toadstule/kumacub
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/kumacub
 
 # Environment
 Environment="CONFIG=/etc/kumacub/config.toml"
@@ -22,7 +21,7 @@ MemoryLimit=512M
 TasksMax=50
 
 # Start the service
-ExecStart=/opt/kumacub/.venv/bin/kumacubd
+ExecStart=/usr/bin/kumacubd
 ExecReload=/bin/kill -HUP $MAINPID
 
 # Restart policy
