@@ -96,7 +96,7 @@ def configure_logging(level: str = DEFAULT_LEVEL, *, structured: bool = True) ->
     root.addHandler(handler)
     root.setLevel(numeric_level)
 
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi", "httpx", "svcs"):
+    for name in ("apscheduler", "httpx"):
         logging.getLogger(name).setLevel(numeric_level)
         logging.getLogger(name).propagate = True
 

@@ -19,10 +19,9 @@ dev = [
 authors = [{name = "Steve Jibson", email = "steve@jibson.com"}]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python",
 ]
-description = "Run local checks; push results to Uptime Kuma"
+description = "Run local Nagios-compatible checks; push results to Uptime Kuma"
 dependencies = [
     "apscheduler>=3.11.1",
     "httpx>=0.28.1",
@@ -30,6 +29,9 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "structlog>=25.5.0",
 ]
+keywords = ["nagios", "Uptime Kuma"]
+license = "GPL-3.0-only"
+icense-files = ["LICENSE"]
 name = "kumacub"
 readme = "README.md"
 requires-python = "==3.13.*"
@@ -42,6 +44,10 @@ kumacubd = "kumacub.entrypoints.kumacubd:main"
 Homepage = "https://github.com/toadstule/kumacub"
 Documentation = "https://github.com/toadstule/kumacub/README.md"
 Issues = "https://github.com/toadstule/kumacub/issues"
+Repository = "https://github.com/toadstule/kumacub.git"
+
+[tool.uv.build-backend.data]
+data = "data"
 
 [tool.mypy]
 ignore_missing_imports = true
