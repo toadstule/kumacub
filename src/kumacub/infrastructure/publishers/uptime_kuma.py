@@ -32,20 +32,17 @@ class _UptimeKumaPublisher:
 
     name: ClassVar[str] = "uptime_kuma"
 
-    def __init__(self) -> None:
-        """Initialize an UptimeKumaPublisher instance."""
-        self._logger = structlog.get_logger()
-
-    async def publish(self, args: UptimeKumaPublishArgs) -> None:
+    @staticmethod
+    async def publish(args: UptimeKumaPublishArgs) -> None:
         """Publish a check result to Uptime Kuma."""
-        # Cast to specific args type for this publisher
+        logger = structlog.get_logger().bind(id=args.id)
         url = f"{args.url}/api/push/{args.push_token.get_secret_value()}"
         params = {
             k: v
             for k, v in args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items()
             if k in {"status", "msg", "ping"}
         }
-        self._logger.debug("Pushing check result to Uptime Kuma", id=args.id, url=url, params=params)
+        logger.debug("Pushing check result to Uptime Kuma", url=url, params=params)
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
@@ -56,12 +53,12 @@ class _UptimeKumaPublisher:
                     timeout=10.0,
                 )
                 response.raise_for_status()
-                self._logger.debug("Successfully pushed check result to Uptime Kuma", id=args.id)
+                logger.debug("Successfully pushed check result to Uptime Kuma")
 
         except httpx.HTTPStatusError as e:
             error_msg = e.response.json().get("msg", f"Server returned error: {e.response.status_code}")
-            self._logger.warning("Failed to push check result: %s", error_msg, id=args.id)
+            logger.warning("Failed to push check result: %s", error_msg)
 
         except httpx.RequestError as e:
             error_msg = f"Request failed: {e!s}"
-            self._logger.warning("Failed to push check result: %s", error_msg, id=args.id)
+            logger.warning("Failed to push check result: %s", error_msg)

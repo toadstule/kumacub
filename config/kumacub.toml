@@ -6,31 +6,10 @@ level = "INFO"  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 structured = true  # Whether to use structured (JSON) logging
 
 # Checks configuration
-#[[checks]]
-#name = "kernel version"
-#executor.command = "/home/steve/scm/kumacub/kernel_version.sh"
-#publisher.url = "https://uptime-kuma.jibson.com"
-#publisher.push_token = "eGsV3npw5qjzKpwLEVx6xOmerMcIUTof"
-#schedule.interval = 23
-
 [[checks]]
 name = "disk usage"
 executor.command = "echo"
 executor.args = ["-n", "OK - Test is running"]
-publisher.url = "https://uptime-kuma.jibson.com"
-publisher.push_token = "eGsV3npw5qjzKpwLEVx6xOmerMcIUTof"
-schedule.interval = 29
-
-#[[checks]]
-#name = "my env"
-#executor = { name = "process", command = "/usr/bin/env", env = { YOUR_MOM = "goes to college", YOUR_DAD = "goes to work" } }
-#parser = { name = "nagios" }
-#publisher = { name = "uptime_kuma", url = "http://your-uptime-kuma-instance.com", push_token = "your-push-token-here" }
-#schedule = { interval = 300 }
-#
-#[[checks]]
-#name = "busted"
-#executor = { name = "process", command = "/bin/sh", args = ["-c", "false"], env = { YOUR_MOM = "goes to college", YOUR_DAD = "goes to work" } }
-#parser = { name = "nagios" }
-#publisher = { name = "uptime_kuma", url = "http://your-uptime-kuma-instance.com", push_token = "your-push-token-here" }
-#schedule = { interval = 300 }
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "my-uptime-kuma-push-token"
+schedule.interval = 60

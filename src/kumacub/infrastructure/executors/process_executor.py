@@ -38,13 +38,11 @@ class _ProcessExecutor:
 
     name: ClassVar[str] = "process"
 
-    def __init__(self) -> None:
-        """Initialize a ProcessExecutor instance."""
-        self._logger = structlog.get_logger()
-
-    async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
+    @staticmethod
+    async def run(args: ProcessExecutorArgs) -> ProcessExecutorOutput:
         """Run a check and return the result."""
-        self._logger.info("Running check", id=args.id)
+        logger = structlog.get_logger().bind(id=args.id)
+        logger.info("Running check")
 
         proc = await asyncio.create_subprocess_exec(
             args.command,
@@ -58,12 +56,12 @@ class _ProcessExecutor:
         stderr = stderr_data.decode().strip()
 
         if proc.returncode != 0:
-            self._logger.warning("Check failed", id=args.id, exit_code=proc.returncode)
+            logger.warning("Check failed", exit_code=proc.returncode)
         else:
-            self._logger.info("Check completed", id=args.id, exit_code=proc.returncode)
+            logger.info("Check completed", exit_code=proc.returncode)
         if stdout:
-            self._logger.debug("Check output", id=args.id, stdout=stdout)
+            logger.debug("Check output", stdout=stdout)
         if stderr:
-            self._logger.warning("Check output", id=args.id, stderr=stderr)
+            logger.warning("Check output", stderr=stderr)
 
         return ProcessExecutorOutput(stdout=stdout, stderr=stderr, exit_code=proc.returncode or 0)

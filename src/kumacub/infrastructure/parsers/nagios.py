@@ -49,7 +49,7 @@ class _NagiosParser:
 
     def parse(self, args: NagiosParserArgs) -> NagiosParserOutput:
         """Parse the raw output into the parser-specific model."""
-        logger = structlog.get_logger()
+        logger = structlog.get_logger().bind(id=args.id)
         service_output = ""
         long_service_output = ""
         service_performance_data = ""
@@ -85,7 +85,7 @@ class _NagiosParser:
             service_performance_data = " ".join(filter(None, performance_data_parts))
             long_service_output = "\n".join(long_text_lines)
 
-        logger.debug("Parsed Nagios output", id=args.id, exit_code=args.exit_code, service_output=service_output)
+        logger.debug("Parsed Nagios output", exit_code=args.exit_code, service_output=service_output)
         return NagiosParserOutput(
             service_state=self._STATE_MAP.get(args.exit_code, "UNKNOWN"),
             exit_code=args.exit_code,
