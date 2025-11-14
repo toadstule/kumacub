@@ -10,7 +10,6 @@
 """Process executor."""
 
 import asyncio
-import time
 from typing import ClassVar
 
 import pydantic
@@ -32,7 +31,6 @@ class ProcessExecutorOutput(pydantic.BaseModel):
     stdout: str
     stderr: str
     exit_code: int
-    elapsed_time: float
 
 
 class _ProcessExecutor:
@@ -43,13 +41,11 @@ class _ProcessExecutor:
     def __init__(self) -> None:
         """Initialize a ProcessExecutor instance."""
         self._logger = structlog.get_logger()
-        self._start_time: float | None = None
 
     async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
         """Run a check and return the result."""
         self._logger.info("Running check: %s", args.name)
 
-        self._timer()
         proc = await asyncio.create_subprocess_exec(
             args.command,
             *args.args,
@@ -70,12 +66,4 @@ class _ProcessExecutor:
         if stderr:
             self._logger.warning("Check %s stderr: %s", args.name, stderr)
 
-        return ProcessExecutorOutput(
-            stdout=stdout, stderr=stderr, exit_code=proc.returncode or 0, elapsed_time=self._timer()
-        )
-
-    def _timer(self) -> float:
-        """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""
-        result = (time.time() - self._start_time) * 1000 if self._start_time is not None else 0.0
-        self._start_time = time.time()
-        return result
+        return ProcessExecutorOutput(stdout=stdout, stderr=stderr, exit_code=proc.returncode or 0)

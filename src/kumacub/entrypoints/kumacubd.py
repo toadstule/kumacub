@@ -28,7 +28,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from kumacub import config
 from kumacub.application.services import runner
-from kumacub.infrastructure import executors, publishers
+from kumacub.infrastructure import executors, parsers, publishers
 from kumacub.logging_config import configure_logging
 
 
@@ -42,18 +42,12 @@ def main() -> None:
 async def _main() -> None:
     """Async entrypoint for the KumaCub daemon."""
     settings = config.get_settings()
-
     # Graceful shutdown using signals
     stop_event = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         # noinspection PyTypeChecker
         loop.add_signal_handler(sig, stop_event.set)
-
-    # Wire infrastructure
-    kuma_client = publishers.get_publisher(name="uptime_kuma")
-    process_executor = executors.get_executor("process")
-    runner_ = runner.Runner(publisher=kuma_client, process_executor=process_executor)
 
     scheduler = AsyncIOScheduler()
     scheduler.start()
@@ -63,10 +57,15 @@ async def _main() -> None:
     def schedule_checks(current_settings: config.Settings) -> None:
         for check in current_settings.checks:
             job_id = f"check:{check.name}"
+            runner_ = runner.Runner(
+                executor=executors.get_executor(check.executor.name),
+                parser=parsers.get_parser(check.parser.name),
+                publisher=publishers.get_publisher(check.publisher.name),
+            )
             scheduler.add_job(
                 func=runner_.run,
                 trigger="interval",
-                seconds=check.interval,
+                seconds=check.schedule.interval,
                 kwargs={"check": check},
                 id=job_id,
                 replace_existing=True,
@@ -85,12 +84,17 @@ async def _main() -> None:
         for job_id, check in target_jobs.items():
             if job_id in existing_jobs:
                 # Reschedule interval in case it changed
-                scheduler.reschedule_job(job_id=job_id, trigger="interval", seconds=check.interval)
+                scheduler.reschedule_job(job_id=job_id, trigger="interval", seconds=check.schedule.interval)
             else:
+                runner_ = runner.Runner(
+                    executor=executors.get_executor(check.executor.name),
+                    parser=parsers.get_parser(check.parser.name),
+                    publisher=publishers.get_publisher(check.publisher.name),
+                )
                 scheduler.add_job(
                     func=runner_.run,
                     trigger="interval",
-                    seconds=check.interval,
+                    seconds=check.schedule.interval,
                     kwargs={"check": check},
                     id=job_id,
                 )

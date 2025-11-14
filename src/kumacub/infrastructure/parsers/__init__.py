@@ -22,8 +22,9 @@ if TYPE_CHECKING:
 # Export all args and output models.
 __all__ = ["NagiosParserArgs", "NagiosParserOutput", "ParserP", "get_parser"]
 
+
 # Extend this to add new parsers.
-_PARSERS: Final[list[type[ParserP]]] = [_NagiosParser]
+_PARSERS: Final[list[type[ParserP]]] = [_NagiosParser]  # type: ignore[list-item]
 
 _REGISTRY: Final[dict[str, type[ParserP]]] = {p.name: p for p in _PARSERS}
 
@@ -33,7 +34,7 @@ class ParserP(Protocol):
 
     name: ClassVar[str]
 
-    def parse(self, args: NagiosParserArgs) -> pydantic.BaseModel:
+    def parse(self, args: pydantic.BaseModel) -> pydantic.BaseModel:
         """Parse raw process output into a structured model."""
 
 

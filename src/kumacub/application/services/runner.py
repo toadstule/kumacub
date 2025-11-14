@@ -9,7 +9,9 @@
 
 """KumaCub application services runner."""
 
-from kumacub.application import result_translators
+import time
+from typing import cast
+
 from kumacub.domain import models
 from kumacub.infrastructure import executors, parsers, publishers
 
@@ -29,18 +31,42 @@ class Runner:
         self,
         executor: executors.ExecutorP,
         parser: parsers.ParserP,
-        result_translator: result_translators.ResultTranslatorP,
         publisher: publishers.PublisherP,
     ) -> None:
         """Initialize a Runner instance."""
         self._executor = executor
         self._parser = parser
-        self._result_translator = result_translator
         self._publisher = publisher
+        self._start_time: float | None = None
 
     async def run(self, check: models.Check) -> None:
         """Execute a check and publish the result."""
-        raw_result = await self._executor.run(check=check)
-        parsed_result = await self._parser.parse(raw_check_result)
-        translated_result: self._result_translator.translate(parsed_result)
-        await self._publisher.publish(args=translated_result)
+        self._timer()
+        executor_args = executors.ProcessExecutorArgs(
+            name=check.name,
+            command=check.executor.command,
+            args=check.executor.args,
+            env=check.executor.env,
+        )
+        executor_output = await self._executor.run(executor_args)
+        executor_output = cast("executors.ProcessExecutorOutput", executor_output)
+        parser_args = parsers.NagiosParserArgs(
+            output=executor_output.stdout or executor_output.stderr,
+            exit_code=executor_output.exit_code,
+        )
+        parser_output = self._parser.parse(parser_args)
+        parser_output = cast("parsers.NagiosParserOutput", parser_output)
+        publisher_args = publishers.UptimeKumaPublishArgs(
+            url=check.publisher.url,
+            push_token=check.publisher.push_token,
+            status="up" if parser_output.exit_code == 0 else "down",
+            msg=parser_output.service_output,
+            ping=self._timer(),
+        )
+        await self._publisher.publish(args=publisher_args)
+
+    def _timer(self) -> float:
+        """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""
+        result = (time.time() - self._start_time) * 1000 if self._start_time is not None else 0.0
+        self._start_time = time.time()
+        return result

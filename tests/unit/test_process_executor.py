@@ -7,210 +7,139 @@
 #  You should have received a copy of the GNU General Public License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 
-"""Unit tests for ProcessExecutor class.
+"""Integration tests for ProcessExecutor class.
 
-These tests use mocked dependencies to verify orchestration logic in isolation.
+These tests execute real subprocesses to verify end-to-end behavior.
 """
 
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
-import pydantic
 import pytest
 
-from kumacub.domain import models
-from kumacub.infrastructure.executors.process_executor import _ProcessExecutor
+from kumacub.infrastructure import executors
+
+if TYPE_CHECKING:
+    from kumacub.infrastructure.executors import _ProcessExecutor
 
 
-class TestProcessExecutorUnit:
-    """Unit tests for _ProcessExecutor with mocked dependencies.
-
-    These tests verify the executor orchestration logic without executing real subprocesses.
-    """
+class TestProcessExecutor:
+    """Integration tests for executors.ExecutorP with real subprocess execution."""
 
     @pytest.fixture
-    def runner(self, monkeypatch: pytest.MonkeyPatch) -> _ProcessExecutor:
-        """Return a _ProcessExecutor instance with mocked logger."""
+    def executor(self, monkeypatch: pytest.MonkeyPatch) -> executors.ExecutorP:
+        """Return a executors.ExecutorP instance with mocked logger."""
+        # Patch the logger to avoid issues with test environment
         mock_logger = mock.MagicMock()
         monkeypatch.setattr(
             "kumacub.infrastructure.executors.process_executor.structlog.get_logger", lambda: mock_logger
         )
-        return _ProcessExecutor()
+        return executors.get_executor("process")
 
     @pytest.fixture
-    def sample_check(self) -> models.Check:
-        """Return a sample check for testing."""
-        return models.Check(
-            name="test_check",
-            type="nagios",
-            command="test_command",
-            args=["arg1", "arg2"],
-            env={"VAR": "value"},
-        )
+    def exec_success(self) -> executors.ProcessExecutorArgs:
+        """Return executor args that will succeed."""
+        return executors.ProcessExecutorArgs(name="success", command="echo", args=["-n", "test output"])
+
+    @pytest.fixture
+    def exec_fail(self) -> executors.ProcessExecutorArgs:
+        """Return executor args that will fail with non-zero exit code."""
+        return executors.ProcessExecutorArgs(name="fail", command="false")
+
+    @pytest.fixture
+    def exec_not_found(self) -> executors.ProcessExecutorArgs:
+        """Return executor args with a non-existent command."""
+        return executors.ProcessExecutorArgs(name="not_found", command="non_existent_command")
 
     @pytest.mark.asyncio
-    async def test_run_orchestration_success(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
-        """Test that executor properly orchestrates subprocess, parser, and translator."""
-        # Mock subprocess execution
-        with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
-            mock_proc = mock.AsyncMock()
-            mock_proc.communicate.return_value = (b"output", b"")
-            mock_proc.returncode = 0
-            mock_exec.return_value = mock_proc
+    async def test_run_success(
+        self, executor: executors.ExecutorP, exec_success: executors.ProcessExecutorArgs
+    ) -> None:
+        """Test running a successful command."""
+        result = cast("executors.ProcessExecutorOutput", await executor.run(args=exec_success))
 
-            # Mock parser
-            with mock.patch(
-                "kumacub.infrastructure.executors.process_executor.infra_parsers.get_parser"
-            ) as mock_get_parser:
-                mock_parser = mock.Mock()
-                mock_parsed = mock.Mock(spec=pydantic.BaseModel)
-                mock_parser.parse.return_value = mock_parsed
-                mock_get_parser.return_value = mock_parser
-
-                # Mock translator
-                with mock.patch(
-                    "kumacub.infrastructure.executors.process_executor.rt_translators.get_result_translator"
-                ) as mock_get_translator:
-                    mock_translator = mock.Mock()
-                    expected_result = models.CheckResult(status="up", msg="All good")
-                    mock_translator.translate.return_value = expected_result
-                    mock_get_translator.return_value = mock_translator
-
-                    result = await runner.run(sample_check)
-
-                    # Verify subprocess was called with correct args
-                    mock_exec.assert_called_once_with(
-                        "test_command",
-                        "arg1",
-                        "arg2",
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
-                        env={"VAR": "value"},
-                    )
-
-                    # Verify parser was retrieved and called
-                    mock_get_parser.assert_called_once_with(name="nagios")
-                    mock_parser.parse.assert_called_once_with(exit_code=0, output="output")
-
-                    # Verify translator was retrieved and called
-                    mock_get_translator.assert_called_once_with(name="nagios")
-                    mock_translator.translate.assert_called_once_with(parsed=mock_parsed)
-
-                    # Verify result
-                    assert result.status == "up"
-                    assert result.msg == "All good"
-                    assert result.ping is not None
-                    assert result.ping >= 0
+        assert result.exit_code == 0
+        assert result.stdout == "test output"
+        assert result.stderr == ""
 
     @pytest.mark.asyncio
-    async def test_run_subprocess_failure(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
-        """Test handling of subprocess failures."""
-        with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
-            mock_proc = mock.AsyncMock()
-            mock_proc.communicate.return_value = (b"error output", b"")
-            mock_proc.returncode = 1
-            mock_exec.return_value = mock_proc
+    async def test_run_error(self, executor: executors.ExecutorP, exec_fail: executors.ProcessExecutorArgs) -> None:
+        """Test running a command that returns non-zero exit code."""
+        result = cast("executors.ProcessExecutorOutput", await executor.run(args=exec_fail))
 
-            with mock.patch(
-                "kumacub.infrastructure.executors.process_executor.infra_parsers.get_parser"
-            ) as mock_get_parser:
-                mock_parser = mock.Mock()
-                mock_parsed = mock.Mock(spec=pydantic.BaseModel)
-                mock_parser.parse.return_value = mock_parsed
-                mock_get_parser.return_value = mock_parser
-
-                with mock.patch(
-                    "kumacub.infrastructure.executors.process_executor.rt_translators.get_result_translator"
-                ) as mock_get_translator:
-                    mock_translator = mock.Mock()
-                    expected_result = models.CheckResult(status="down", msg="Check failed")
-                    mock_translator.translate.return_value = expected_result
-                    mock_get_translator.return_value = mock_translator
-
-                    result = await runner.run(sample_check)
-
-                    # Parser should be called with non-zero exit code
-                    mock_parser.parse.assert_called_once_with(exit_code=1, output="error output")
-
-                    # Result should reflect failure
-                    assert result.status == "down"
-                    assert result.ping is not None
+        assert result.exit_code == 1
+        assert result.stdout == ""
+        assert result.stderr == ""
 
     @pytest.mark.asyncio
-    async def test_run_exception_handling(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
-        """Test that exceptions are caught and converted to CheckResult."""
-        with mock.patch(
-            "asyncio.create_subprocess_exec",
-            side_effect=FileNotFoundError("Command not found"),
+    async def test_run_command_not_found(
+        self,
+        executor: executors.ExecutorP,
+        exec_not_found: executors.ProcessExecutorArgs,
+    ) -> None:
+        """Test running a non-existent command."""
+        with pytest.raises(FileNotFoundError):
+            await executor.run(args=exec_not_found)
+
+    @pytest.mark.asyncio
+    async def test_run_timeout(
+        self,
+        executor: executors.ExecutorP,
+        exec_success: executors.ProcessExecutorArgs,
+    ) -> None:
+        """Test command timeout handling."""
+        with (
+            mock.patch.object(
+                asyncio,
+                "create_subprocess_exec",
+                side_effect=TimeoutError("Command timed out"),
+            ),
+            pytest.raises(TimeoutError),
         ):
-            result = await runner.run(sample_check)
-
-            assert result.status == "down"
-            assert "Error executing check" in result.msg
-            assert "Command not found" in result.msg
-            assert result.ping is not None
-            assert result.ping >= 0
+            await executor.run(args=exec_success)
 
     @pytest.mark.asyncio
-    async def test_timer_measures_execution_time(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
-        """Test that timer correctly measures execution time."""
+    async def test_run_with_environment(
+        self,
+        executor: executors.ExecutorP,
+        exec_success: executors.ProcessExecutorArgs,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test running a command with environment variables."""
+        monkeypatch.setenv("TEST_VAR", "test_value")
+        exec_success.env = {"CUSTOM_VAR": "custom_value"}
+
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()
-            mock_proc.communicate.return_value = (b"output", b"")
+            mock_proc.communicate.return_value = (b"test output", b"")
             mock_proc.returncode = 0
             mock_exec.return_value = mock_proc
 
-            with mock.patch(
-                "kumacub.infrastructure.executors.process_executor.infra_parsers.get_parser"
-            ) as mock_get_parser:
-                mock_parser = mock.Mock()
-                mock_parsed = mock.Mock(spec=pydantic.BaseModel)
-                mock_parser.parse.return_value = mock_parsed
-                mock_get_parser.return_value = mock_parser
+            await executor.run(exec_success)
 
-                with mock.patch(
-                    "kumacub.infrastructure.executors.process_executor.rt_translators.get_result_translator"
-                ) as mock_get_translator:
-                    mock_translator = mock.Mock()
-                    mock_translator.translate.return_value = models.CheckResult(status="up")
-                    mock_get_translator.return_value = mock_translator
-
-                    # Mock time to control timer
-                    with mock.patch(
-                        "kumacub.infrastructure.executors.process_executor.time.time",
-                        side_effect=[100.0, 100.5, 100.5],  # start, during, end
-                    ):
-                        result = await runner.run(sample_check)
-
-                        # Should measure ~500ms (0.5 seconds = 500 milliseconds)
-                        assert result.ping == pytest.approx(500.0, abs=1.0)
+            # Check that the environment variables were passed correctly
+            _, kwargs = mock_exec.call_args
+            env = kwargs.get("env", {})
+            assert env.get("CUSTOM_VAR") == "custom_value"
+            assert "TEST_VAR" not in env  # Shouldn't inherit from parent env
 
     @pytest.mark.asyncio
-    async def test_stderr_logged_as_warning(self, runner: _ProcessExecutor, sample_check: models.Check) -> None:
-        """Test that stderr output is logged as warning."""
+    async def test_run_with_stderr(
+        self,
+        executor: _ProcessExecutor,
+        exec_success: executors.ProcessExecutorArgs,
+    ) -> None:
+        """Test running a command that writes to stderr."""
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()
-            mock_proc.communicate.return_value = (b"output", b"warning message")
+            mock_proc.communicate.return_value = (b"test output", b"error message")
             mock_proc.returncode = 0
             mock_exec.return_value = mock_proc
+            result = await executor.run(args=exec_success)
 
-            with mock.patch(
-                "kumacub.infrastructure.executors.process_executor.infra_parsers.get_parser"
-            ) as mock_get_parser:
-                mock_parser = mock.Mock()
-                mock_parser.parse.return_value = mock.Mock(spec=pydantic.BaseModel)
-                mock_get_parser.return_value = mock_parser
-
-                with mock.patch(
-                    "kumacub.infrastructure.executors.process_executor.rt_translators.get_result_translator"
-                ) as mock_get_translator:
-                    mock_translator = mock.Mock()
-                    mock_translator.translate.return_value = models.CheckResult(status="up")
-                    mock_get_translator.return_value = mock_translator
-
-                    await runner.run(sample_check)
-
-                    # Verify logger.warning was called for stderr
-                    runner._logger.warning.assert_called()
-                    warning_calls = list(runner._logger.warning.call_args_list)
-                    assert any("stderr" in str(call).lower() for call in warning_calls)
+        assert result.exit_code == 0
+        assert result.stdout == "test output"
+        assert result.stderr == "error message"

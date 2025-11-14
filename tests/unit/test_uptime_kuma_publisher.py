@@ -11,6 +11,7 @@
 from typing import Any, Literal
 
 import httpx
+import pydantic
 import pytest
 import respx
 
@@ -30,7 +31,7 @@ class TestUptimeKumaPublisher:
         """Return sample publish args for testing."""
         return uptime_kuma.UptimeKumaPublishArgs(
             url="http://ignored",
-            push_token="test-token",  # noqa: S106
+            push_token=pydantic.SecretStr("test-token"),
             status="up",
             msg="Test message",
             ping=42.5,
@@ -111,7 +112,7 @@ class TestUptimeKumaPublisher:
             # Create parameters and make the request
             args = uptime_kuma.UptimeKumaPublishArgs(
                 url="http://ignored",
-                push_token="test-token",  # noqa: S106
+                push_token=pydantic.SecretStr("test-token"),
                 status=status,
                 msg=msg,
                 ping=ping,

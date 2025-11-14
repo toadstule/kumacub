@@ -20,17 +20,10 @@ class UptimeKumaPublishArgs(pydantic.BaseModel):
     """Arguments for the publisher."""
 
     url: str
-    push_token: str
-    status: Literal["", "down", "up"]
+    push_token: pydantic.SecretStr
+    status: Literal["", "down", "up"] = ""
     msg: str = pydantic.Field(default="", max_length=250)
     ping: pydantic.PositiveFloat | None
-
-
-class PushResponse(pydantic.BaseModel):
-    """Push response model."""
-
-    ok: bool
-    msg: str | None
 
 
 class _UptimeKumaPublisher:
@@ -46,7 +39,7 @@ class _UptimeKumaPublisher:
         """Publish a check result to Uptime Kuma."""
         # Cast to specific args type for this publisher
         typed_args = cast("UptimeKumaPublishArgs", args)
-        url = f"{typed_args.url}/api/push/{typed_args.push_token}"
+        url = f"{typed_args.url}/api/push/{typed_args.push_token.get_secret_value()}"
         fields = {"status", "msg", "ping"}
         params = {
             k: v

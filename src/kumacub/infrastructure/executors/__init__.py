@@ -11,15 +11,19 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, Final, Protocol
+from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
 from .process_executor import ProcessExecutorArgs, ProcessExecutorOutput, _ProcessExecutor
+
+if TYPE_CHECKING:
+    import pydantic
+
 
 # Export all args and output models.
 __all__ = ["ExecutorP", "ProcessExecutorArgs", "ProcessExecutorOutput", "get_executor"]
 
 # Extend this to add new executors.
-_EXECUTORS: Final[list[type[ExecutorP]]] = [_ProcessExecutor]
+_EXECUTORS: Final[list[type[ExecutorP]]] = [_ProcessExecutor]  # type: ignore[list-item]
 
 _REGISTRY: Final[dict[str, type[ExecutorP]]] = {p.name: p for p in _EXECUTORS}
 
@@ -29,7 +33,7 @@ class ExecutorP(Protocol):
 
     name: ClassVar[str]
 
-    async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
+    async def run(self, args: pydantic.BaseModel) -> pydantic.BaseModel:
         """Execute a check and return the result."""
 
 

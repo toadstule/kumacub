@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 import pydantic
 import pydantic_settings
@@ -27,7 +27,7 @@ from kumacub.domain import models  # noqa: TC001
 class LogSettings(pydantic.BaseModel):
     """Logging configuration."""
 
-    level: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "INFO"
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     structured: bool = True
 
 

@@ -8,27 +8,47 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""KumaCub types."""
+"""KumaCub data models."""
 
 from typing import Literal
 
 import pydantic
 
 
+class Executor(pydantic.BaseModel):
+    """KumaCub Executor."""
+
+    name: Literal["process"] = "process"
+    command: str
+    args: list[str] = []
+    env: dict[str, str] = {}
+
+
+class Parser(pydantic.BaseModel):
+    """KumaCub Parser."""
+
+    name: Literal["nagios"] = "nagios"
+
+
+class Publisher(pydantic.BaseModel):
+    """KumaCub Publisher."""
+
+    name: Literal["uptime_kuma"] = "uptime_kuma"
+    url: str
+    push_token: pydantic.SecretStr
+
+
+class Schedule(pydantic.BaseModel):
+    """KumaCub Schedule."""
+
+    interval: pydantic.PositiveFloat = 60
+
+
 class Check(pydantic.BaseModel):
     """KumaCub Check."""
 
     name: str
-    type: Literal["nagios"]
-    command: str
-    args: list[str] = []
-    env: dict[str, str] = {}
-    interval: pydantic.PositiveFloat = 60
-
-
-class CheckResult(pydantic.BaseModel):
-    """KumaCub Check Result."""
-
-    status: Literal["", "down", "up"] = "up"
-    msg: str = pydantic.Field(default="", max_length=250)
-    ping: pydantic.PositiveFloat | None = None
+    executor: Executor
+    parser: Parser = Parser()
+    publisher: Publisher
+    schedule: Schedule = Schedule()

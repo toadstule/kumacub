@@ -10,10 +10,11 @@
 """Tests for the Nagios parser implementation."""
 
 import textwrap
+from typing import cast
 
 import pytest
 
-from kumacub.infrastructure.parsers import nagios
+from kumacub.infrastructure import parsers
 
 
 class TestNagiosParser:
@@ -31,18 +32,28 @@ class TestNagiosParser:
     )
     def test_exit_code_mapping(self, exit_code: int, expected_state: str) -> None:
         """Test that exit codes are correctly mapped to service states."""
-        result = nagios._NagiosParser().parse(
-            exit_code=exit_code,
-            output="Test output",
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=exit_code,
+                    output="Test output",
+                )
+            ),
         )
         assert result.service_state == expected_state
         assert result.exit_code == exit_code
 
     def test_empty_output(self) -> None:
         """Test with empty output."""
-        result = nagios._NagiosParser().parse(
-            exit_code=0,
-            output="",
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=0,
+                    output="",
+                )
+            ),
         )
         assert result.exit_code == 0
         assert result.service_state == "OK"
@@ -53,9 +64,14 @@ class TestNagiosParser:
     def test_simple_output(self) -> None:
         """Test with simple output (no performance data)."""
         output = "Everything is fine"
-        result = nagios._NagiosParser().parse(
-            exit_code=0,
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=0,
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == output
         assert result.service_performance_data == ""
@@ -64,9 +80,14 @@ class TestNagiosParser:
     def test_with_performance_data(self) -> None:
         """Test with performance data in the first line."""
         output = "DISK OK - free space: 42% | /=42%;80;90"
-        result = nagios._NagiosParser().parse(
-            exit_code=0,
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=0,
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == "DISK OK - free space: 42%"
         assert result.service_performance_data == "/=42%;80;90"
@@ -78,9 +99,14 @@ class TestNagiosParser:
         /: 90% used
         /home: 5% used
         """
-        result = nagios._NagiosParser().parse(
-            exit_code=1,  # WARNING
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=1,  # WARNING
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == "DISK WARNING - free space: 10%"
         assert result.long_service_output == "/: 90% used\n/home: 5% used"
@@ -94,9 +120,14 @@ class TestNagiosParser:
         /home: 80% used | /home=80%;85;95
         Additional performance data | metric1=42;50;75 metric2=30;50;75
         """
-        result = nagios._NagiosParser().parse(
-            exit_code=2,  # CRITICAL
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=2,  # CRITICAL
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == "DISK CRITICAL - free space: 95%"
         assert result.long_service_output == "/: 95% used\n/home: 80% used\nAdditional performance data"
@@ -105,9 +136,14 @@ class TestNagiosParser:
     def test_with_whitespace(self) -> None:
         """Test that whitespace is properly handled."""
         output = "  DISK OK - free space: 42%  |  /=42%;80;90  \n  /: 42% used  "
-        result = nagios._NagiosParser().parse(
-            exit_code=0,
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=0,
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == "DISK OK - free space: 42%"
         assert result.service_performance_data == "/=42%;80;90"
@@ -123,10 +159,14 @@ class TestNagiosParser:
         PERFDATA LINE 3
         PERFDATA LINE N
         """)
-        parser = nagios._NagiosParser()
-        result = parser.parse(
-            exit_code=0,
-            output=output,
+        result = cast(
+            "parsers.NagiosParserOutput",
+            parsers.get_parser("nagios").parse(
+                parsers.NagiosParserArgs(
+                    exit_code=0,
+                    output=output,
+                )
+            ),
         )
         assert result.service_output == "TEXT OUTPUT"
         assert result.service_performance_data == "OPTIONAL PERFDATA PERFDATA LINE 2 PERFDATA LINE 3 PERFDATA LINE N"
