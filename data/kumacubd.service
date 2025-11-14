@@ -16,10 +16,6 @@ PrivateTmp=true
 ProtectKernelModules=true
 RestrictRealtime=true
 
-# Resource limits
-MemoryLimit=512M
-TasksMax=50
-
 # Start the service
 ExecStart=/usr/bin/kumacubd
 ExecReload=/bin/kill -HUP $MAINPID
