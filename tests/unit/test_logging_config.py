@@ -99,12 +99,8 @@ def test_configure_logging_custom_levels() -> None:
 def test_configure_logging_third_party_loggers() -> None:
     """Test that third-party loggers are properly configured."""
     third_party_loggers = [
-        "uvicorn",
-        "uvicorn.error",
-        "uvicorn.access",
-        "fastapi",
+        "apscheduler",
         "httpx",
-        "svcs",
     ]
 
     configure_logging(level="DEBUG", structured=True)
