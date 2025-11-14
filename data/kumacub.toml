@@ -1,0 +1,16 @@
+# KumaCub Configuration
+
+# Logging configuration
+[log]
+level = "INFO"  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+structured = false  # Whether to use structured (JSON) logging
+
+# Checks configuration
+
+#[[checks]]
+#name = "fake check"
+#executor.command = "echo"
+#executor.args = ["-n", "OK - Test is running"]
+#publisher.url = "https://uptime-kuma.example.com"
+#publisher.push_token = "my-uptime-kuma-push-token"
+#schedule.interval = 60
