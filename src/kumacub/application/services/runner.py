@@ -51,6 +51,7 @@ class Runner:
         executor_output = await self._executor.run(executor_args)
         executor_output = cast("executors.ProcessExecutorOutput", executor_output)
         parser_args = parsers.NagiosParserArgs(
+            id=check.name,
             output=executor_output.stdout or executor_output.stderr,
             exit_code=executor_output.exit_code,
         )

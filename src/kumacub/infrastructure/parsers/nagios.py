@@ -14,11 +14,13 @@ from __future__ import annotations
 from typing import ClassVar, Final, Literal
 
 import pydantic
+import structlog
 
 
 class NagiosParserArgs(pydantic.BaseModel):
     """Nagios-style check args."""
 
+    id: str
     exit_code: int
     output: str
 
@@ -47,6 +49,7 @@ class _NagiosParser:
 
     def parse(self, args: NagiosParserArgs) -> NagiosParserOutput:
         """Parse the raw output into the parser-specific model."""
+        logger = structlog.get_logger()
         service_output = ""
         long_service_output = ""
         service_performance_data = ""
@@ -82,6 +85,7 @@ class _NagiosParser:
             service_performance_data = " ".join(filter(None, performance_data_parts))
             long_service_output = "\n".join(long_text_lines)
 
+        logger.debug("Parsed Nagios output", id=args.id, exit_code=args.exit_code, service_output=service_output)
         return NagiosParserOutput(
             service_state=self._STATE_MAP.get(args.exit_code, "UNKNOWN"),
             exit_code=args.exit_code,

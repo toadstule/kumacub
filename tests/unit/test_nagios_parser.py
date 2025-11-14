@@ -36,6 +36,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=exit_code,
                     output="Test output",
                 )
@@ -50,6 +51,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=0,
                     output="",
                 )
@@ -68,6 +70,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=0,
                     output=output,
                 )
@@ -84,6 +87,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=0,
                     output=output,
                 )
@@ -103,6 +107,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=1,  # WARNING
                     output=output,
                 )
@@ -124,6 +129,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=2,  # CRITICAL
                     output=output,
                 )
@@ -140,6 +146,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=0,
                     output=output,
                 )
@@ -163,6 +170,7 @@ class TestNagiosParser:
             "parsers.NagiosParserOutput",
             parsers.get_parser("nagios").parse(
                 parsers.NagiosParserArgs(
+                    id="test-check",
                     exit_code=0,
                     output=output,
                 )
