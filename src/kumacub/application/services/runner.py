@@ -43,7 +43,7 @@ class Runner:
         """Execute a check and publish the result."""
         self._timer()
         executor_args = executors.ProcessExecutorArgs(
-            name=check.name,
+            id=check.name,
             command=check.executor.command,
             args=check.executor.args,
             env=check.executor.env,

@@ -19,7 +19,7 @@ import structlog
 class ProcessExecutorArgs(pydantic.BaseModel):
     """Process executor args."""
 
-    name: str
+    id: str
     command: str
     args: list[str] = []
     env: dict[str, str] = {}
@@ -44,7 +44,7 @@ class _ProcessExecutor:
 
     async def run(self, args: ProcessExecutorArgs) -> ProcessExecutorOutput:
         """Run a check and return the result."""
-        self._logger.info("Running check: %s", args.name)
+        self._logger.info("Running check", id=args.id)
 
         proc = await asyncio.create_subprocess_exec(
             args.command,
@@ -58,12 +58,12 @@ class _ProcessExecutor:
         stderr = stderr_data.decode().strip()
 
         if proc.returncode != 0:
-            self._logger.warning("Check %s failed with exit code %s", args.name, proc.returncode)
+            self._logger.warning("Check failed", id=args.id, exit_code=proc.returncode)
         else:
-            self._logger.info("Check %s completed with exit code %s", args.name, proc.returncode)
+            self._logger.info("Check completed", id=args.id, exit_code=proc.returncode)
         if stdout:
-            self._logger.debug("Check %s stdout: %s", args.name, stdout)
+            self._logger.debug("Check output", id=args.id, stdout=stdout)
         if stderr:
-            self._logger.warning("Check %s stderr: %s", args.name, stderr)
+            self._logger.warning("Check output", id=args.id, stderr=stderr)
 
         return ProcessExecutorOutput(stdout=stdout, stderr=stderr, exit_code=proc.returncode or 0)

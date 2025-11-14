@@ -42,17 +42,17 @@ class TestProcessExecutor:
     @pytest.fixture
     def exec_success(self) -> executors.ProcessExecutorArgs:
         """Return executor args that will succeed."""
-        return executors.ProcessExecutorArgs(name="success", command="echo", args=["-n", "test output"])
+        return executors.ProcessExecutorArgs(id="success", command="echo", args=["-n", "test output"])
 
     @pytest.fixture
     def exec_fail(self) -> executors.ProcessExecutorArgs:
         """Return executor args that will fail with non-zero exit code."""
-        return executors.ProcessExecutorArgs(name="fail", command="false")
+        return executors.ProcessExecutorArgs(id="fail", command="false")
 
     @pytest.fixture
     def exec_not_found(self) -> executors.ProcessExecutorArgs:
         """Return executor args with a non-existent command."""
-        return executors.ProcessExecutorArgs(name="not_found", command="non_existent_command")
+        return executors.ProcessExecutorArgs(id="not_found", command="non_existent_command")
 
     @pytest.mark.asyncio
     async def test_run_success(
