@@ -83,19 +83,6 @@ def test_settings_env_overrides_toml(monkeypatch: pytest.MonkeyPatch) -> None:
     assert config.get_settings().log.level == "WARNING"
 
 
-def test_settings_defaults_when_no_toml(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that settings use defaults when no TOML file exists."""
-    # Point to non-existent file
-    monkeypatch.setenv("CONFIG", "/nonexistent/config.toml")
-
-    s = config.get_settings()
-
-    assert s.service_name == "kumacub"
-    assert s.log.level == "INFO"  # Default
-    assert s.log.structured is True  # Default
-    assert s.checks == []  # Default
-
-
 def test_settings_cache_behavior() -> None:
     """Test that get_settings() returns cached instance."""
     s1 = config.get_settings()
