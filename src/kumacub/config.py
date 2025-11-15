@@ -39,7 +39,7 @@ class Settings(pydantic_settings.BaseSettings):
         env_nested_delimiter="__",
         env_prefix="KUMACUB__",
         extra="ignore",
-        toml_file=os.environ.get("CONFIG", "/etc/kumacub/config.toml"),
+        toml_file=os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml"),
     )
 
     # App identity

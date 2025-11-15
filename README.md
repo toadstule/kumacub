@@ -4,62 +4,34 @@
 
 KumaCub is a lightweight daemon that executes scheduled health checks and pushes the results to [Uptime Kuma](https://github.com/louislam/uptime-kuma). It supports Nagios-compatible check scripts and provides flexible configuration via TOML files or environment variables.
 
-## Features
-
-- **Scheduled Checks**: Run health checks at configurable intervals
-- **Nagios Compatible**: Supports standard Nagios plugin output format
-- **Uptime Kuma Integration**: Push check results directly to Uptime Kuma
-- **Flexible Configuration**: Configure via TOML files or environment variables
-- **Hot Reload**: Reload configuration without restarting (via SIGHUP)
-- **Structured Logging**: JSON-formatted logs with configurable levels
-- **Async Architecture**: Built on asyncio for efficient concurrent execution
-
 ## Installation
 
-### Manual Installation
+### Arch Linux (AUR)
+
+For Arch Linux users, you can install KumaCub from the AUR. Installing this way will also install the systemd unit file
+and a sample config file.
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/kumacub.git
-cd kumacub
-
-# Install dependencies
-pip install -e .
+# Install from AUR (we'll use `yay` for this example)
+yay -S kumacub
 ```
 
-### System Service Installation
+### Manual Installation (PIP)
 
-For production deployments, install KumaCub as a systemd service:
+We understand that this is a bit rough; it's a work in progress.
 
 ```bash
-# Create directories
-sudo mkdir -p /opt/kumacub /etc/kumacub
-
-# Install application
-cd /opt/kumacub
-sudo python3 -m venv .venv
-sudo .venv/bin/pip install /path/to/kumacub
-
-# Copy configuration
-sudo cp /path/to/kumacub/config/kumacub.toml /etc/kumacub/config.toml
-sudo chmod 600 /etc/kumacub/config.toml  # Protect tokens
-
-# Install systemd service
-sudo cp kumacubd.service /etc/systemd/system/
+pip install kumacub
+sudo mkdir /etc/kumacub
+sudo mv /usr/local/config.toml /etc/kumacub/config.toml
+sudo mv /usr/local/kumacubd.service /etc/systemd/system/
+sudo sed -i 's|/usr/bin/kumacubd|/usr/local/bin/kumacubd|' /etc/systemd/system/kumacubd.service
 sudo systemctl daemon-reload
-sudo systemctl enable kumacubd
-sudo systemctl start kumacubd
-
-# Check status
-sudo systemctl status kumacubd
-sudo journalctl -u kumacubd -f
 ```
-
-**Note**: The service runs as root by default since many system checks (disk usage, service status, etc.) require elevated privileges. If your checks don't require root access, you can modify the service file to run as an unprivileged user by adding `User=kumacub` and `Group=kumacub` to the `[Service]` section.
 
 ## Configuration
 
-KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this with the `CONFIG` environment variable.
+KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this with the `KUMACUB__CONFIG` environment variable.
 
 ### Example Configuration
 
@@ -72,17 +44,25 @@ structured = true  # Use JSON-formatted logs
 # Define checks
 [[checks]]
 name = "disk usage"
-executor.command = "/usr/local/bin/check_disk.sh"
-executor.args = ["-w", "80", "-c", "90"]
+executor.command = "/usr/lib/monitoring-plugins/check_disk"
+executor.args = ["-c", "90"]
 publisher.url = "https://uptime-kuma.example.com"
 publisher.push_token = "your-push-token-here"
 schedule.interval = 60  # Run every 60 seconds
 
 [[checks]]
-name = "service health"
-executor.command = "/usr/bin/curl"
-executor.args = ["-f", "http://localhost:8080/health"]
-executor.env = { TIMEOUT = "5" }
+name = "system time (ntp)"
+executor.command = "/usr/lib/monitoring-plugins/check_ntp_time"
+executor.args = ["-H", "pool.ntp.org", "-c", "10"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+
+[[checks]]
+name = "system load"
+executor.command = "check_load"
+executor.args = ["-c", "10", "-w", "10"]
+executor.env = { "PATH" = "/usr/lib/monitoring-plugins" }
 publisher.url = "https://uptime-kuma.example.com"
 publisher.push_token = "your-push-token-here"
 schedule.interval = 30
@@ -98,7 +78,6 @@ Each `[[checks]]` entry supports:
 - **executor.command**: Command to execute
 - **executor.args**: Command arguments (optional, default: `[]`)
 - **executor.env**: Environment variables (optional, default: `{}`)
-- **parser.name**: Parser type (optional, default: `"nagios"`)
 - **publisher.url**: Uptime Kuma instance URL
 - **publisher.push_token**: Uptime Kuma push token
 - **schedule.interval**: Check interval in seconds (default: `60`)
@@ -109,7 +88,7 @@ You can override any configuration value using environment variables with the `K
 
 ```bash
 # Override config file location
-export CONFIG=/path/to/config.toml
+export KUMACUB__CONFIG=/path/to/config.toml
 
 # Override log level
 export KUMACUB__LOG__LEVEL=DEBUG
@@ -119,19 +98,6 @@ export KUMACUB__LOG__STRUCTURED=false
 ```
 
 ## Usage
-
-### Running the Daemon
-
-```bash
-# Run with default config
-kumacubd
-
-# Run with custom config
-CONFIG=/path/to/config.toml kumacubd
-
-# Run with debug logging
-KUMACUB__LOG__LEVEL=DEBUG kumacubd
-```
 
 ### Managing the Systemd Service
 
@@ -161,96 +127,6 @@ sudo systemctl enable kumacubd
 sudo systemctl disable kumacubd
 ```
 
-### Signal Handling
-
-- **SIGINT/SIGTERM**: Graceful shutdown
-- **SIGHUP**: Reload configuration without restarting
-
-```bash
-# Reload configuration (manual process)
-kill -HUP $(pgrep kumacubd)
-
-# Or use systemd
-sudo systemctl reload kumacubd
-```
-
-## Check Output Format
-
-KumaCub supports the Nagios plugin output format:
-
-```
-SERVICE OUTPUT | OPTIONAL PERFDATA
-LONG TEXT LINE 1
-LONG TEXT LINE 2
-```
-
-### Exit Codes
-
-- `0`: OK
-- `1`: WARNING
-- `2`: CRITICAL
-- `3`: UNKNOWN
-
-### Example Check Script
-
-```bash
-#!/bin/bash
-# check_disk.sh - Simple disk usage check
-
-USAGE=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
-
-if [ "$USAGE" -gt 90 ]; then
-    echo "CRITICAL - Disk usage at ${USAGE}% | usage=${USAGE}%;80;90"
-    exit 2
-elif [ "$USAGE" -gt 80 ]; then
-    echo "WARNING - Disk usage at ${USAGE}% | usage=${USAGE}%;80;90"
-    exit 1
-else
-    echo "OK - Disk usage at ${USAGE}% | usage=${USAGE}%;80;90"
-    exit 0
-fi
-```
-
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run formatting and linting
-make format check
-```
-
-### Project Structure
-
-```
-kumacub/
-├── src/kumacub/
-│   ├── application/
-│   │   └── services/
-│   │       └── runner.py            # Check execution orchestration
-│   ├── domain/
-│   │   └── models.py                # Core domain models
-│   ├── infrastructure/
-│   │   ├── executors/
-│   │   │   └── process_executor.py  # Process execution
-│   │   ├── parsers/
-│   │   │   └── nagios.py            # Nagios output parsing
-│   │   └── publishers/
-│   │       └── uptime_kuma.py       # Uptime Kuma integration
-│   ├── entrypoints/
-│   │   └── kumacubd.py              # Daemon entry point
-│   ├── config.py                    # Configuration management
-│   └── logging_config.py            # Logging setup
-├── tests/
-│   └── unit/                        # Unit tests
-├── config/
-│   └── kumacub.toml                 # Example configuration
-└── README.md
-```
-
 ## License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.
@@ -261,4 +137,4 @@ You should have received a copy of the GNU General Public License along with thi
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.

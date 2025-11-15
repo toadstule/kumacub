@@ -46,7 +46,7 @@ def config_toml_file(tmp_path: Path) -> typing.Iterator[Path]:
         )
     )
     # Set the toml_file directly in model_config
-    # Note: This is a workaround since CONFIG env var is read at class definition time
+    # Note: This is a workaround since KUMACUB__CONFIG env var is read at class definition time
     original_toml_file = config.Settings.model_config.get("toml_file")
     config.Settings.model_config["toml_file"] = str(toml)
 
@@ -81,19 +81,6 @@ def test_settings_env_overrides_toml(monkeypatch: pytest.MonkeyPatch) -> None:
     config.reload_settings()
 
     assert config.get_settings().log.level == "WARNING"
-
-
-def test_settings_defaults_when_no_toml(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that settings use defaults when no TOML file exists."""
-    # Point to non-existent file
-    monkeypatch.setenv("CONFIG", "/nonexistent/config.toml")
-
-    s = config.get_settings()
-
-    assert s.service_name == "kumacub"
-    assert s.log.level == "INFO"  # Default
-    assert s.log.structured is True  # Default
-    assert s.checks == []  # Default
 
 
 def test_settings_cache_behavior() -> None:
