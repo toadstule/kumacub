@@ -4,7 +4,7 @@
 PRESET_VARS := $(.VARIABLES)
 
 # Project variables
-TEST_COVERAGE   := 80
+TEST_COVERAGE   := 90
 PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
 PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
 PYTHON_VERSION_ := $(shell cat .python-version)
@@ -52,6 +52,10 @@ dep:  ## Install dependencies.
 dep-upgrade:  ## Upgrade the dependencies.
 	@$(UV) lock --upgrade
 
+.PHONY: dev
+install: venv-check $(WHEEL)  ## Install the package in development mode.
+	@$(PIP) install --editable .
+
 .PHONY: format
 format:  ## Format the code; sort the imports.
 	@$(RUFF) format $(PY_FILES)
@@ -60,10 +64,6 @@ format:  ## Format the code; sort the imports.
 .PHONY: help
 help:  ## Display this help.
 	@grep -h -E '^[a-zA-Z0-9._-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
-
-.PHONY: install
-install: venv-check $(WHEEL)  ## Install the package (locally).
-	@$(PIP) install --editable .
 
 .PHONY: lint
 lint: format  ## Lint the code.

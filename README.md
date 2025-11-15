@@ -72,17 +72,25 @@ structured = true  # Use JSON-formatted logs
 # Define checks
 [[checks]]
 name = "disk usage"
-executor.command = "/usr/local/bin/check_disk.sh"
-executor.args = ["-w", "80", "-c", "90"]
+executor.command = "/usr/lib/monitoring-plugins/check_disk"
+executor.args = ["-c", "90"]
 publisher.url = "https://uptime-kuma.example.com"
 publisher.push_token = "your-push-token-here"
 schedule.interval = 60  # Run every 60 seconds
 
 [[checks]]
-name = "service health"
-executor.command = "/usr/bin/curl"
-executor.args = ["-f", "http://localhost:8080/health"]
-executor.env = { TIMEOUT = "5" }
+name = "system time (ntp)"
+executor.command = "/usr/lib/monitoring-plugins/check_ntp_time"
+executor.args = ["-H", "pool.ntp.org", "-c", "10"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+
+[[checks]]
+name = "system load"
+executor.command = "check_load"
+executor.args = ["-c", "10", "-w", "10"]
+executor.env = { "PATH" = "/usr/lib/monitoring-plugins" }
 publisher.url = "https://uptime-kuma.example.com"
 publisher.push_token = "your-push-token-here"
 schedule.interval = 30
@@ -223,34 +231,6 @@ make test
 make format check
 ```
 
-### Project Structure
-
-```
-kumacub/
-├── src/kumacub/
-│   ├── application/
-│   │   └── services/
-│   │       └── runner.py            # Check execution orchestration
-│   ├── domain/
-│   │   └── models.py                # Core domain models
-│   ├── infrastructure/
-│   │   ├── executors/
-│   │   │   └── process_executor.py  # Process execution
-│   │   ├── parsers/
-│   │   │   └── nagios.py            # Nagios output parsing
-│   │   └── publishers/
-│   │       └── uptime_kuma.py       # Uptime Kuma integration
-│   ├── entrypoints/
-│   │   └── kumacubd.py              # Daemon entry point
-│   ├── config.py                    # Configuration management
-│   └── logging_config.py            # Logging setup
-├── tests/
-│   └── unit/                        # Unit tests
-├── config/
-│   └── kumacub.toml                 # Example configuration
-└── README.md
-```
-
 ## License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.
@@ -261,4 +241,4 @@ You should have received a copy of the GNU General Public License along with thi
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
