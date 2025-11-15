@@ -2,20 +2,6 @@
 
 Thank you for your interest in contributing to KumaCub! We welcome all contributions, including bug reports, feature requests, documentation improvements, and code contributions.
 
-## Table of Contents
-
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-  - [Making Changes](#making-changes)
-  - [Code Style](#code-style)
-- [Submitting Changes](#submitting-changes)
-  - [Pull Request Guidelines](#pull-request-guidelines)
-- [Reporting Issues](#reporting-issues)
-- [License](#license)
-
 ## Getting Started
 
 ### Prerequisites

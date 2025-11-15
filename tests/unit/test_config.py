@@ -46,7 +46,7 @@ def config_toml_file(tmp_path: Path) -> typing.Iterator[Path]:
         )
     )
     # Set the toml_file directly in model_config
-    # Note: This is a workaround since CONFIG env var is read at class definition time
+    # Note: This is a workaround since KUMACUB__CONFIG env var is read at class definition time
     original_toml_file = config.Settings.model_config.get("toml_file")
     config.Settings.model_config["toml_file"] = str(toml)
 

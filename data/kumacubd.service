@@ -8,7 +8,7 @@ Wants=network-online.target
 Type=simple
 
 # Environment
-Environment="CONFIG=/etc/kumacub/config.toml"
+Environment="KUMACUB__CONFIG=/etc/kumacub/config.toml"
 Environment="PYTHONUNBUFFERED=1"
 
 # Security hardening (relaxed for system checks that need privileges)

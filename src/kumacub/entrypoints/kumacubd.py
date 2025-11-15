@@ -14,7 +14,7 @@ Usage:
 
 Notes:
 - Reads settings from `kumacub.config.get_settings()` (env > TOML). You can set
-  `CONFIG` to point at a TOML file (see `fs_overlay/etc/kumacub/config.toml`).
+  `KUMACUB__CONFIG` to point at a TOML file (see `fs_overlay/etc/kumacub/config.toml`).
 - Calls `configure_logging(level, structured)`; toggle console logs via
   `LOG__STRUCTURED=false` for local development.
 """
