@@ -16,6 +16,53 @@ and a sample config file.
 yay -S kumacub
 ```
 
+### Quick Setup with uv
+
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/):
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sudo sh
+    ```
+2. Create a systemd unit file `/etc/systemd/system/kumacubd.service`:
+    ```unit file (systemd)
+    [Unit]
+    Description=KumaCub - Run local checks and push results to Uptime Kuma
+    Documentation=https://github.com/toadstule/kumacub
+    After=network-online.target
+    Wants=network-online.target
+    
+    [Service]
+    ExecStart=/root/.local/bin/uv run --isolated --no-progress --python=3.13 --with kumacub kumacubd
+    ExecReload=/bin/kill -HUP $MAINPID
+    
+    [Install]
+    WantedBy=multi-user.target   
+    ```
+3. Create a config file `/etc/kumacub/config.toml`:
+    ```bash
+    sudo mkdir /etc/kumacub
+    ```
+    ```toml
+    [log]
+    level = "DEBUG"
+    structured = false
+    
+    [[checks]]
+    name = "sampe check"
+    executor.command = "echo"
+    executor.args = ["-n", "OK - sample check is working"]
+    publisher.url = "https://uptime-kuma.example.com"
+    publisher.push_token = "your-push-token-here"
+    schedule.interval = 60
+    ```
+4. Reload systemd daemon:
+    ```bash
+    sudo systemctl daemon-reload
+    ```
+5. Start the service:
+    ```bash
+    sudo systemctl start kumacubd
+    ```
+
 ### Manual Installation (PIP)
 
 We understand that this is a bit rough; it's a work in progress.
