@@ -22,6 +22,7 @@ Notes:
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import signal
 
 import structlog
@@ -47,7 +48,7 @@ async def _main() -> None:
     loop = asyncio.get_running_loop()
 
     # Initialize scheduler and schedule all checks
-    scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler(timezone=dt.UTC)
     _schedule_all_checks(scheduler, settings)
 
     # Setup signal handlers
@@ -82,7 +83,7 @@ async def _main() -> None:
 def _schedule_all_checks(scheduler: AsyncIOScheduler, settings: config.Settings) -> None:
     """Schedule all checks from settings."""
     scheduler.remove_all_jobs()
-    for check in settings.checks:
+    for index, check in enumerate(settings.checks):
         runner_ = runner.Runner(
             executor=executors.get_executor(check.executor.name),
             parser=parsers.get_parser(check.parser.name),
@@ -94,6 +95,7 @@ def _schedule_all_checks(scheduler: AsyncIOScheduler, settings: config.Settings)
             seconds=check.schedule.interval,
             kwargs={"check": check},
             id=f"check:{check.name}",
+            next_run_time=dt.datetime.now(tz=dt.UTC) + dt.timedelta(seconds=index * 2),
         )
 
 
