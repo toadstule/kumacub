@@ -9,6 +9,7 @@
 
 """KumaCub application services runner."""
 
+import textwrap
 import time
 from typing import cast
 
@@ -54,12 +55,13 @@ class Runner:
         )
         parser_output = self._parser.parse(parser_args)
         parser_output = cast("parsers.NagiosParserOutput", parser_output)
+        max_msg_len = publishers.UptimeKumaPublishArgs.model_fields["msg"].metadata[0].max_length
         publisher_args = publishers.UptimeKumaPublishArgs(
             id=check.name,
             url=check.publisher.url,
             push_token=check.publisher.push_token,
             status="up" if parser_output.exit_code == 0 else "down",
-            msg=parser_output.service_output,
+            msg=textwrap.shorten(parser_output.service_output, width=max_msg_len, placeholder="..."),
             ping=self._timer(),
         )
         await self._publisher.publish(args=publisher_args)
