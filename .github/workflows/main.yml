@@ -10,6 +10,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
     - name: Check out
@@ -27,6 +30,9 @@ jobs:
           **/uv.lock
         version: latest
 
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: make dep
 
@@ -39,7 +45,7 @@ jobs:
     - name: Store the distribution packages
       uses: actions/upload-artifact@v4
       with:
-        name: python-package-distributions
+        name: python-package-distributions-${{ matrix.python-version }}
         path: dist/
 
   publish-to-pypi:
@@ -56,7 +62,7 @@ jobs:
       - name: Download the distribution packages
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: python-package-distributions-3.14
           path: dist/
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -20,6 +20,11 @@ authors = [{name = "Steve Jibson", email = "steve@jibson.com"}]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "Run local Nagios-compatible checks; push results to Uptime Kuma"
 dependencies = [
@@ -34,7 +39,7 @@ license = "GPL-3.0-only"
 icense-files = ["LICENSE"]
 name = "kumacub"
 readme = "README.md"
-requires-python = "==3.13.*"
+requires-python = ">=3.11"
 version = "0.3.1"
 
 [project.scripts]
