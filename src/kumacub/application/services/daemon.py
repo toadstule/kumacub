@@ -50,7 +50,7 @@ class KumaCubDaemon:
                 seconds=check.schedule.interval,
                 kwargs={"check": check},
                 id=f"check:{check.name}",
-                next_run_time=dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=index * 2),
+                next_run_time=dt.datetime.now(dt.UTC) + dt.timedelta(seconds=index * 2),
             )
 
     def _setup_signal_handlers(self) -> None:
