@@ -34,11 +34,12 @@ Thank you for your interest in contributing to KumaCub! We welcome all contribut
 kumacub/
 ├── data/
 │   └── config.toml                 # Example configuration
-│   └── kumacubd.service            # Systemd unit file
+│   └── kumacub.service             # Systemd unit file
 ├── src/kumacub/
 │   ├── application/
 │   │   └── services/
-│   │       └── runner.py            # Check execution orchestration
+│   │       ├── runner.py           # Check execution orchestration
+│   │       └── daemon.py           # Main daemon service for scheduled checks
 │   ├── domain/
 │   │   └── models.py                # Core domain models
 │   ├── infrastructure/
@@ -47,9 +48,10 @@ kumacub/
 │   │   ├── parsers/
 │   │   │   └── nagios.py            # Nagios output parsing
 │   │   └── publishers/
+│   │       └── stdout.py            # Stdout integration
 │   │       └── uptime_kuma.py       # Uptime Kuma integration
 │   ├── entrypoints/
-│   │   └── kumacubd.py              # Daemon entry point
+│   │   └── cli.py                   # Comand line interface
 │   ├── config.py                    # Configuration management
 │   └── logging_config.py            # Logging setup
 ├── tests/

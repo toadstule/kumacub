@@ -55,8 +55,17 @@ class Runner:
         )
         parser_output = self._parser.parse(parser_args)
         parser_output = cast("parsers.NagiosParserOutput", parser_output)
+        if check.publisher.name == "stdout":
+            max_msg_len = publishers.StdoutPublishArgs.model_fields["msg"].metadata[0].max_length
+            publisher_args = publishers.StdoutPublishArgs(
+                id=check.name,
+                status="up" if parser_output.exit_code == 0 else "down",
+                msg=textwrap.shorten(parser_output.service_output, width=max_msg_len, placeholder="..."),
+            )
+            await self._publisher.publish(args=publisher_args)
+            return
         max_msg_len = publishers.UptimeKumaPublishArgs.model_fields["msg"].metadata[0].max_length
-        publisher_args = publishers.UptimeKumaPublishArgs(
+        publisher_args2 = publishers.UptimeKumaPublishArgs(
             id=check.name,
             url=check.publisher.url,
             push_token=check.publisher.push_token,
@@ -64,7 +73,7 @@ class Runner:
             msg=textwrap.shorten(parser_output.service_output, width=max_msg_len, placeholder="..."),
             ping=self._timer(),
         )
-        await self._publisher.publish(args=publisher_args)
+        await self._publisher.publish(args=publisher_args2)
 
     def _timer(self) -> float:
         """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""
