@@ -154,10 +154,52 @@ class TestRunner:
         assert result3 > result2  # Should be a very small duration
 
     @pytest.mark.asyncio
+    async def test_run_with_stdout_publisher(
+        self, runner: Runner, mock_executor: mock.MagicMock, mock_parser: mock.MagicMock
+    ) -> None:
+        """Test running a check with stdout publisher."""
+        # Setup mock executor output
+        executor_output = mock.MagicMock()
+        executor_output.exit_code = 0
+        executor_output.stdout = "OK - test output"
+        executor_output.stderr = ""
+        mock_executor.run.return_value = executor_output
+
+        # Setup mock parser output
+        parser_output = mock.MagicMock()
+        parser_output.exit_code = 0
+        parser_output.service_output = "OK - test output"
+        mock_parser.parse.return_value = parser_output
+
+        # Create a check with stdout publisher
+        stdout_check = models.Check(
+            name="stdout-check",
+            executor=models.Executor(
+                command="echo",
+                args=["test"],
+            ),
+            publisher=models.Publisher(
+                name="stdout",
+                url="",  # Empty string is fine for stdout publisher
+                push_token=pydantic.SecretStr(""),  # Empty secret is fine for stdout
+            ),
+        )
+
+        # Run the check
+        await runner.run(stdout_check)
+
+        # Verify publisher was called with stdout args
+        runner._publisher.publish.assert_awaited_once()  # type: ignore[attr-defined]
+        publisher_args = runner._publisher.publish.await_args[1]["args"]  # type: ignore[attr-defined]
+        assert publisher_args.id == stdout_check.name
+        assert publisher_args.status == "up"
+        assert publisher_args.msg == parser_output.service_output
+
+    @pytest.mark.asyncio
     async def test_run_with_long_output(
         self, runner: Runner, sample_check: models.Check, mock_executor: mock.MagicMock, mock_parser: mock.MagicMock
     ) -> None:
-        """Test that a long service output raises a validation error.
+        """Test that a long service output is properly truncated.
 
         Tests issue #6: https://github.com/toadstule/kumacub/issues/6
         """
@@ -180,3 +222,73 @@ class TestRunner:
         mock_parser.parse.return_value = parser_output
 
         await runner.run(sample_check)
+
+        # Verify the message was truncated
+        publisher_args = runner._publisher.publish.await_args[1]["args"]  # type: ignore[attr-defined]
+        assert len(publisher_args.msg) <= max_msg_len
+        assert publisher_args.msg.endswith("...")
+
+    @pytest.mark.asyncio
+    async def test_run_with_stdout_publisher_and_long_output(
+        self, runner: Runner, mock_executor: mock.MagicMock, mock_parser: mock.MagicMock
+    ) -> None:
+        """Test that a long service output is properly truncated with stdout publisher."""
+        # Create a service output that's longer than the max length
+        max_msg_len = publishers.StdoutPublishArgs.model_fields["msg"].metadata[0].max_length
+        long_output = "x" * (max_msg_len + 50)
+        assert len(long_output) > max_msg_len
+
+        # Setup mock executor output
+        executor_output = mock.MagicMock()
+        executor_output.exit_code = 0
+        executor_output.stdout = long_output
+        executor_output.stderr = ""
+        mock_executor.run.return_value = executor_output
+
+        # Setup mock parser output with a long service output
+        parser_output = mock.MagicMock()
+        parser_output.exit_code = 0
+        parser_output.service_output = long_output
+        mock_parser.parse.return_value = parser_output
+
+        # Create a check with stdout publisher
+        stdout_check = models.Check(
+            name="long-stdout-check",
+            executor=models.Executor(
+                command="echo",
+                args=["test"],
+            ),
+            publisher=models.Publisher(
+                name="stdout",
+                url="",  # Empty string is fine for stdout publisher
+                push_token=pydantic.SecretStr(""),  # Empty secret is fine for stdout
+            ),
+        )
+
+        # Run the check
+        await runner.run(stdout_check)
+
+        # Verify the message was truncated
+        publisher_args = runner._publisher.publish.await_args[1]["args"]  # type: ignore[attr-defined]
+        assert len(publisher_args.msg) <= max_msg_len
+        assert publisher_args.msg.endswith("...")
+
+    @pytest.mark.asyncio
+    async def test_timer_edge_cases(self, runner: Runner) -> None:
+        """Test edge cases for the timer functionality."""
+        # First call should return 0 and set start time
+        result1 = runner._timer()
+        assert result1 == 0.0
+        assert runner._start_time is not None
+
+        # Second call should return time elapsed since first call
+        result2 = runner._timer()
+        assert result2 > 0.0
+
+        # Reset the timer
+        runner._start_time = None
+
+        # Next call after reset should return 0 again
+        result3 = runner._timer()
+        assert result3 == 0.0
+        assert runner._start_time is not None

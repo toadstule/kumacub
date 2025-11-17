@@ -16,13 +16,24 @@ and a sample config file.
 yay -S kumacub
 ```
 
+### Manual Installation (PIP)
+
+If your distro doesn't have a package available, you can install KumaCub manually.
+
+```bash
+pip install kumacub
+sudo kumacub install
+```
+
 ### Quick Setup with uv
+
+If you prefer to use uv, you can set up your systemd service to use uv to run KumaCub.
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/):
     ```bash
     curl -LsSf https://astral.sh/uv/install.sh | sudo sh
     ```
-2. Create a systemd unit file `/etc/systemd/system/kumacubd.service`:
+2. Create a systemd unit file `/etc/systemd/system/kumacub.service`:
     ```unit file (systemd)
     [Unit]
     Description=KumaCub - Run local checks and push results to Uptime Kuma
@@ -31,7 +42,7 @@ yay -S kumacub
     Wants=network-online.target
     
     [Service]
-    ExecStart=/root/.local/bin/uv run --isolated --no-progress --python=3.13 --with kumacub kumacubd
+    ExecStart=/root/.local/bin/uv run --isolated --no-progress --python=3.13 --with kumacub kumacub daemon
     ExecReload=/bin/kill -HUP $MAINPID
     
     [Install]
@@ -58,23 +69,6 @@ yay -S kumacub
     ```bash
     sudo systemctl daemon-reload
     ```
-5. Start the service:
-    ```bash
-    sudo systemctl start kumacubd
-    ```
-
-### Manual Installation (PIP)
-
-We understand that this is a bit rough; it's a work in progress.
-
-```bash
-pip install kumacub
-sudo mkdir /etc/kumacub
-sudo mv /usr/local/config.toml /etc/kumacub/config.toml
-sudo mv /usr/local/kumacubd.service /etc/systemd/system/
-sudo sed -i 's|/usr/bin/kumacubd|/usr/local/bin/kumacubd|' /etc/systemd/system/kumacubd.service
-sudo systemctl daemon-reload
-```
 
 ## Configuration
 
@@ -150,28 +144,28 @@ export KUMACUB__LOG__STRUCTURED=false
 
 ```bash
 # Start the service
-sudo systemctl start kumacubd
+sudo systemctl start kumacub
 
 # Stop the service
-sudo systemctl stop kumacubd
+sudo systemctl stop kumacub
 
 # Restart the service
-sudo systemctl restart kumacubd
+sudo systemctl restart kumacub
 
 # Reload configuration without restarting
-sudo systemctl reload kumacubd
+sudo systemctl reload kumacub
 
 # Check service status
-sudo systemctl status kumacubd
+sudo systemctl status kumacub
 
 # View logs
-sudo journalctl -u kumacubd -f
+sudo journalctl -u kumacub -f
 
 # Enable on boot
-sudo systemctl enable kumacubd
+sudo systemctl enable kumacub
 
 # Disable on boot
-sudo systemctl disable kumacubd
+sudo systemctl disable kumacub
 ```
 
 ## License

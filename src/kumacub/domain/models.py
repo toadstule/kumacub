@@ -33,7 +33,7 @@ class Parser(pydantic.BaseModel):
 class Publisher(pydantic.BaseModel):
     """KumaCub Publisher."""
 
-    name: Literal["uptime_kuma"] = "uptime_kuma"
+    name: Literal["stdout", "uptime_kuma"] = "uptime_kuma"
     url: str
     push_token: pydantic.SecretStr
 

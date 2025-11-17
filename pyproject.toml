@@ -38,16 +38,13 @@ requires-python = "==3.13.*"
 version = "0.2.0"
 
 [project.scripts]
-kumacubd = "kumacub.entrypoints.kumacubd:main"
+kumacub = "kumacub.entrypoints.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/toadstule/kumacub"
 Documentation = "https://github.com/toadstule/kumacub/README.md"
 Issues = "https://github.com/toadstule/kumacub/issues"
 Repository = "https://github.com/toadstule/kumacub.git"
-
-[tool.uv.build-backend.data]
-data = "data"
 
 [tool.mypy]
 ignore_missing_imports = true

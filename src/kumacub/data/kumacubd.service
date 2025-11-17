@@ -17,7 +17,7 @@ ProtectKernelModules=true
 RestrictRealtime=true
 
 # Start the service
-ExecStart=/usr/bin/kumacubd
+ExecStart="/usr/bin/kumacub daemon"
 ExecReload=/bin/kill -HUP $MAINPID
 
 # Restart policy
@@ -30,7 +30,7 @@ TimeoutStopSec=30s
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=kumacubd
+SyslogIdentifier=kumacub
 
 [Install]
 WantedBy=multi-user.target

@@ -13,16 +13,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
+from .stdout import StdoutPublishArgs, _StdoutPublisher
 from .uptime_kuma import UptimeKumaPublishArgs, _UptimeKumaPublisher
 
 if TYPE_CHECKING:
     import pydantic
 
 # Export all arg models.
-__all__ = ["PublisherP", "UptimeKumaPublishArgs", "get_publisher"]
+__all__ = ["PublisherP", "StdoutPublishArgs", "UptimeKumaPublishArgs", "get_publisher"]
 
 # Extend this to add new publishers.
-_PUBLISHERS: Final[list[type[PublisherP]]] = [_UptimeKumaPublisher]  # type: ignore[list-item]
+_PUBLISHERS: Final[list[type[PublisherP]]] = [_StdoutPublisher, _UptimeKumaPublisher]  # type: ignore[list-item]
 
 _REGISTRY: Final[dict[str, type[PublisherP]]] = {p.name: p for p in _PUBLISHERS}
 
