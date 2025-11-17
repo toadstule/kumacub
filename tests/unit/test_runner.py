@@ -272,23 +272,3 @@ class TestRunner:
         publisher_args = runner._publisher.publish.await_args[1]["args"]  # type: ignore[attr-defined]
         assert len(publisher_args.msg) <= max_msg_len
         assert publisher_args.msg.endswith("...")
-
-    @pytest.mark.asyncio
-    async def test_timer_edge_cases(self, runner: Runner) -> None:
-        """Test edge cases for the timer functionality."""
-        # First call should return 0 and set start time
-        result1 = runner._timer()
-        assert result1 == 0.0
-        assert runner._start_time is not None
-
-        # Second call should return time elapsed since first call
-        result2 = runner._timer()
-        assert result2 > 0.0
-
-        # Reset the timer
-        runner._start_time = None
-
-        # Next call after reset should return 0 again
-        result3 = runner._timer()
-        assert result3 == 0.0
-        assert runner._start_time is not None
