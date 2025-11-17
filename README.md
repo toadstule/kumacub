@@ -8,8 +8,8 @@ KumaCub is a lightweight daemon that executes scheduled health checks and pushes
 
 ### Arch Linux (AUR)
 
-For Arch Linux users, you can install KumaCub from the AUR. Installing this way will also install the systemd unit file
-and a sample config file.
+For Arch Linux users, you can install (kumacub)[https://aur.archlinux.org/packages/kumacub] from the AUR.
+Installing this way will also install the systemd unit file and a sample config file.
 
 ```bash
 # Install from AUR (we'll use `yay` for this example)
@@ -21,7 +21,7 @@ yay -S kumacub
 If your distro doesn't have a package available, you can install KumaCub manually.
 
 ```bash
-pip install kumacub
+sudo pip install kumacub
 sudo kumacub install
 ```
 
@@ -49,22 +49,7 @@ If you prefer to use uv, you can set up your systemd service to use uv to run Ku
     WantedBy=multi-user.target   
     ```
 3. Create a config file `/etc/kumacub/config.toml`:
-    ```bash
-    sudo mkdir /etc/kumacub
-    ```
-    ```toml
-    [log]
-    level = "DEBUG"
-    structured = false
-    
-    [[checks]]
-    name = "sampe check"
-    executor.command = "echo"
-    executor.args = ["-n", "OK - sample check is working"]
-    publisher.url = "https://uptime-kuma.example.com"
-    publisher.push_token = "your-push-token-here"
-    schedule.interval = 60
-    ```
+   (see [Configuration](#configuration))
 4. Reload systemd daemon:
     ```bash
     sudo systemctl daemon-reload
