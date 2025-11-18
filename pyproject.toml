@@ -40,7 +40,7 @@ icense-files = ["LICENSE"]
 name = "kumacub"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "0.3.1"
+version = "0.4.0"
 
 [project.scripts]
 kumacub = "kumacub.entrypoints.cli:main"
