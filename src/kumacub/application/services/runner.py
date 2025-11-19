@@ -9,10 +9,9 @@
 
 """KumaCub application services runner."""
 
-import textwrap
 import time
-from typing import cast
 
+from kumacub.application.services import translators
 from kumacub.domain import models
 from kumacub.infrastructure import executors, parsers, publishers
 
@@ -40,6 +39,8 @@ class Runner:
     async def run(self, check: models.Check) -> None:
         """Execute a check and publish the result."""
         self._timer()
+
+        # Stage 1: Execute
         executor_args = executors.ProcessExecutorArgs(
             id=check.name,
             command=check.executor.command,
@@ -47,33 +48,25 @@ class Runner:
             env=check.executor.env,
         )
         executor_output = await self._executor.run(executor_args)
-        executor_output = cast("executors.ProcessExecutorOutput", executor_output)
-        parser_args = parsers.NagiosParserArgs(
-            id=check.name,
-            output=executor_output.stdout or executor_output.stderr,
-            exit_code=executor_output.exit_code,
+
+        # Stage 2: Parse
+        parser_args = translators.executor_to_parser(
+            executor_output=executor_output,
+            executor_name=check.executor.name,
+            parser_name=check.parser.name,
+            check_id=check.name,
         )
         parser_output = self._parser.parse(parser_args)
-        parser_output = cast("parsers.NagiosParserOutput", parser_output)
-        if check.publisher.name == "stdout":
-            max_msg_len = publishers.StdoutPublishArgs.model_fields["msg"].metadata[0].max_length
-            publisher_args = publishers.StdoutPublishArgs(
-                id=check.name,
-                status="up" if parser_output.exit_code == 0 else "down",
-                msg=textwrap.shorten(parser_output.service_output, width=max_msg_len, placeholder="..."),
-            )
-            await self._publisher.publish(args=publisher_args)
-            return
-        max_msg_len = publishers.UptimeKumaPublishArgs.model_fields["msg"].metadata[0].max_length
-        publisher_args2 = publishers.UptimeKumaPublishArgs(
-            id=check.name,
-            url=check.publisher.url,
-            push_token=check.publisher.push_token,
-            status="up" if parser_output.exit_code == 0 else "down",
-            msg=textwrap.shorten(parser_output.service_output, width=max_msg_len, placeholder="..."),
+
+        # Stage 3: Publish
+        publisher_args = translators.parser_to_publisher(
+            parser_output=parser_output,
+            parser_name=check.parser.name,
+            publisher_name=check.publisher.name,
+            check=check,
             ping=self._timer(),
         )
-        await self._publisher.publish(args=publisher_args2)
+        await self._publisher.publish(args=publisher_args)
 
     def _timer(self) -> float:
         """Return the elapsed time (in milliseconds) since the timer started and reset the timer."""

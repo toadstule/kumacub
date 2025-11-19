@@ -19,7 +19,7 @@ import pytest
 
 from kumacub.application.services.runner import Runner
 from kumacub.domain import models
-from kumacub.infrastructure import publishers
+from kumacub.infrastructure import executors, parsers, publishers
 
 
 class TestRunner:
@@ -70,16 +70,21 @@ class TestRunner:
     ) -> None:
         """Test running a successful check."""
         # Setup mock executor output
-        executor_output = mock.MagicMock()
-        executor_output.exit_code = 0
-        executor_output.stdout = "OK - test output"
-        executor_output.stderr = ""
+        executor_output = executors.ProcessExecutorOutput(
+            exit_code=0,
+            stdout="OK - test output",
+            stderr="",
+        )
         mock_executor.run.return_value = executor_output
 
         # Setup mock parser output
-        parser_output = mock.MagicMock()
-        parser_output.exit_code = 0
-        parser_output.service_output = "OK - test output"
+        parser_output = parsers.NagiosParserOutput(
+            exit_code=0,
+            service_output="OK - test output",
+            service_state="OK",
+            long_service_output="",
+            service_performance_data="",
+        )
         mock_parser.parse.return_value = parser_output
 
         # Run the check
@@ -115,16 +120,21 @@ class TestRunner:
     ) -> None:
         """Test running a failed check."""
         # Setup mock executor output with error
-        executor_output = mock.MagicMock()
-        executor_output.exit_code = 1
-        executor_output.stdout = ""
-        executor_output.stderr = "Error: something went wrong"
+        executor_output = executors.ProcessExecutorOutput(
+            exit_code=1,
+            stdout="",
+            stderr="Error: something went wrong",
+        )
         mock_executor.run.return_value = executor_output
 
         # Setup mock parser output for error case
-        parser_output = mock.MagicMock()
-        parser_output.exit_code = 1
-        parser_output.service_output = "CRITICAL - something went wrong"
+        parser_output = parsers.NagiosParserOutput(
+            exit_code=1,
+            service_output="CRITICAL - something went wrong",
+            service_state="WARNING",
+            long_service_output="",
+            service_performance_data="",
+        )
         mock_parser.parse.return_value = parser_output
 
         # Run the check
@@ -159,16 +169,21 @@ class TestRunner:
     ) -> None:
         """Test running a check with stdout publisher."""
         # Setup mock executor output
-        executor_output = mock.MagicMock()
-        executor_output.exit_code = 0
-        executor_output.stdout = "OK - test output"
-        executor_output.stderr = ""
+        executor_output = executors.ProcessExecutorOutput(
+            exit_code=0,
+            stdout="OK - test output",
+            stderr="",
+        )
         mock_executor.run.return_value = executor_output
 
         # Setup mock parser output
-        parser_output = mock.MagicMock()
-        parser_output.exit_code = 0
-        parser_output.service_output = "OK - test output"
+        parser_output = parsers.NagiosParserOutput(
+            exit_code=0,
+            service_output="OK - test output",
+            service_state="OK",
+            long_service_output="",
+            service_performance_data="",
+        )
         mock_parser.parse.return_value = parser_output
 
         # Create a check with stdout publisher
@@ -209,16 +224,21 @@ class TestRunner:
         assert len(long_output) > max_msg_len
 
         # Setup mock executor output
-        executor_output = mock.MagicMock()
-        executor_output.exit_code = 0
-        executor_output.stdout = long_output
-        executor_output.stderr = ""
+        executor_output = executors.ProcessExecutorOutput(
+            exit_code=0,
+            stdout=long_output,
+            stderr="",
+        )
         mock_executor.run.return_value = executor_output
 
         # Setup mock parser output with a long service output
-        parser_output = mock.MagicMock()
-        parser_output.exit_code = 0
-        parser_output.service_output = long_output
+        parser_output = parsers.NagiosParserOutput(
+            exit_code=0,
+            service_output=long_output,
+            service_state="OK",
+            long_service_output="",
+            service_performance_data="",
+        )
         mock_parser.parse.return_value = parser_output
 
         await runner.run(sample_check)
@@ -239,16 +259,21 @@ class TestRunner:
         assert len(long_output) > max_msg_len
 
         # Setup mock executor output
-        executor_output = mock.MagicMock()
-        executor_output.exit_code = 0
-        executor_output.stdout = long_output
-        executor_output.stderr = ""
+        executor_output = executors.ProcessExecutorOutput(
+            exit_code=0,
+            stdout=long_output,
+            stderr="",
+        )
         mock_executor.run.return_value = executor_output
 
         # Setup mock parser output with a long service output
-        parser_output = mock.MagicMock()
-        parser_output.exit_code = 0
-        parser_output.service_output = long_output
+        parser_output = parsers.NagiosParserOutput(
+            exit_code=0,
+            service_output=long_output,
+            service_state="OK",
+            long_service_output="",
+            service_performance_data="",
+        )
         mock_parser.parse.return_value = parser_output
 
         # Create a check with stdout publisher
