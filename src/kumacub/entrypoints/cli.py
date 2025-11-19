@@ -10,7 +10,8 @@
 """Console entrypoint KumaCub.
 
 Usage:
-    $ kumacub daemon      # Run the daemon (default)
+    $ kumacub             # Validate the config an execute the tests (without pushing the results)
+    $ kumacub daemon      # Run the daemon
     $ kumacub install     # Install service and config files
 """
 
