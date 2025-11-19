@@ -8,7 +8,7 @@ KumaCub is a lightweight daemon that executes scheduled health checks and pushes
 
 ### Arch Linux (AUR)
 
-For Arch Linux users, you can install (kumacub)[https://aur.archlinux.org/packages/kumacub] from the AUR.
+For Arch Linux users, you can install [kumacub](https://aur.archlinux.org/packages/kumacub) from the AUR.
 Installing this way will also install the systemd unit file and a sample config file.
 
 ```bash
