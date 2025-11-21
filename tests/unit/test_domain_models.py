@@ -28,7 +28,9 @@ class TestCheckModel:
             name="test_check",
             executor=models.Executor(command="echo"),
             parser=models.Parser(),
-            publisher=models.Publisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.create_publisher(
+                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(),
         )
         assert check.name == "test_check"
@@ -46,7 +48,9 @@ class TestCheckModel:
                 command="/usr/local/bin/check_disk", args=["-w", "80%", "-c", "90%"], env={"PATH": "/usr/bin"}
             ),
             parser=models.Parser(),
-            publisher=models.Publisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.create_publisher(
+                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(interval=30.5),
         )
         assert check.name == "full_check"
@@ -62,7 +66,9 @@ class TestCheckModel:
                 name="test",
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
-                publisher=models.Publisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+                publisher=models.create_publisher(
+                    name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                ),
                 schedule=models.Schedule(interval=-1.0),
             )
         errors = exc_info.value.errors()
@@ -75,7 +81,9 @@ class TestCheckModel:
                 name="test",
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
-                publisher=models.Publisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+                publisher=models.create_publisher(
+                    name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                ),
                 schedule=models.Schedule(interval=0),
             )
         errors = exc_info.value.errors()
@@ -87,7 +95,9 @@ class TestCheckModel:
             name="ser_check",
             executor=models.Executor(command="test", args=["arg1"], env={"KEY": "value"}),
             parser=models.Parser(),
-            publisher=models.Publisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.create_publisher(
+                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(interval=45),
         )
 
@@ -102,3 +112,44 @@ class TestCheckModel:
         assert restored.executor.args == original.executor.args
         assert restored.executor.env == original.executor.env
         assert restored.schedule.interval == original.schedule.interval
+
+
+class TestPublisherModels:
+    """Tests for publisher models and factory function."""
+
+    def test_create_stdout_publisher(self) -> None:
+        """Test creating a stdout publisher with default values."""
+        publisher = models.create_publisher(name="stdout")
+        assert isinstance(publisher, models.StdoutPublisher)
+        assert publisher.name == "stdout"
+        assert publisher.url == ""
+        assert publisher.push_token.get_secret_value() == ""
+
+    def test_create_uptime_kuma_publisher(self) -> None:
+        """Test creating an Uptime Kuma publisher with required fields."""
+        publisher = models.create_publisher(name="uptime_kuma", url="https://example.com", push_token="test_token")  # noqa: S106
+        assert isinstance(publisher, models.UptimeKumaPublisher)
+        assert publisher.name == "uptime_kuma"
+        assert publisher.url == "https://example.com"
+        assert publisher.push_token.get_secret_value() == "test_token"
+
+    def test_create_uptime_kuma_with_secret_str(self) -> None:
+        """Test creating an Uptime Kuma publisher with SecretStr push_token."""
+        secret = pydantic.SecretStr("test_secret")
+        publisher = models.create_publisher(name="uptime_kuma", url="https://example.com", push_token=secret)
+        assert publisher.push_token.get_secret_value() == "test_secret"
+
+    def test_create_uptime_kuma_missing_url(self) -> None:
+        """Test creating an Uptime Kuma publisher with missing URL."""
+        with pytest.raises(ValueError, match="url and push_token are required for UptimeKumaPublisher"):
+            models.create_publisher(name="uptime_kuma", push_token="test_token")  # noqa: S106
+
+    def test_create_uptime_kuma_missing_push_token(self) -> None:
+        """Test creating an Uptime Kuma publisher with missing push token."""
+        with pytest.raises(ValueError, match="url and push_token are required for UptimeKumaPublisher"):
+            models.create_publisher(name="uptime_kuma", url="https://example.com")
+
+    def test_create_unknown_publisher(self) -> None:
+        """Test creating a publisher with an unknown type."""
+        with pytest.raises(ValueError, match="Unknown publisher name: unknown"):
+            models.create_publisher(name="unknown")  # type: ignore[arg-type]

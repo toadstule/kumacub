@@ -68,7 +68,7 @@ class TestParserToPublisher:
         check = models.Check(
             name="test-check",
             executor=models.Executor(command="echo", args=["test"]),
-            publisher=models.Publisher(
+            publisher=models.create_publisher(
                 name="stdout",
                 url="",
                 push_token=pydantic.SecretStr(""),
@@ -95,7 +95,7 @@ class TestParserToPublisher:
         check = models.Check(
             name="test-check",
             executor=models.Executor(command="echo", args=["test"]),
-            publisher=models.Publisher(
+            publisher=models.create_publisher(
                 name="uptime_kuma",
                 url="https://example.com",
                 push_token=pydantic.SecretStr("token"),

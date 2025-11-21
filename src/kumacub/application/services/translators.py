@@ -97,10 +97,11 @@ def parser_to_publisher(
         case ("nagios", "uptime_kuma"):
             output = typing.cast("parsers.NagiosParserOutput", parser_output)
             max_msg_len = publishers.UptimeKumaPublishArgs.model_fields["msg"].metadata[0].max_length
+            pub = typing.cast("models.UptimeKumaPublisher", check.publisher)
             return publishers.UptimeKumaPublishArgs(
                 id=check.name,
-                url=check.publisher.url,
-                push_token=check.publisher.push_token,
+                url=pub.url,
+                push_token=pub.push_token,
                 status="up" if output.exit_code == 0 else "down",
                 msg=textwrap.shorten(output.service_output, width=max_msg_len, placeholder="..."),
                 ping=ping,

@@ -50,7 +50,8 @@ class TestRunner:
                 args=["test"],
                 env={"TEST_ENV": "test"},
             ),
-            publisher=models.Publisher(
+            publisher=models.create_publisher(
+                name="uptime_kuma",
                 url="https://example.com",
                 push_token=pydantic.SecretStr("test-token"),
             ),
@@ -193,7 +194,7 @@ class TestRunner:
                 command="echo",
                 args=["test"],
             ),
-            publisher=models.Publisher(
+            publisher=models.create_publisher(
                 name="stdout",
                 url="",  # Empty string is fine for stdout publisher
                 push_token=pydantic.SecretStr(""),  # Empty secret is fine for stdout
@@ -283,7 +284,7 @@ class TestRunner:
                 command="echo",
                 args=["test"],
             ),
-            publisher=models.Publisher(
+            publisher=models.create_publisher(
                 name="stdout",
                 url="",  # Empty string is fine for stdout publisher
                 push_token=pydantic.SecretStr(""),  # Empty secret is fine for stdout
