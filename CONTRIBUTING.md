@@ -6,7 +6,7 @@ Thank you for your interest in contributing to KumaCub! We welcome all contribut
 
 ### Prerequisites
 
-- Python 3.13
+- Python 3.11 - 3.14
 - [uv](https://github.com/astral-sh/uv) (Python package/project manager)
 - Git
 
@@ -32,14 +32,15 @@ Thank you for your interest in contributing to KumaCub! We welcome all contribut
 
 ```
 kumacub/
-├── data/
-│   └── config.toml                 # Example configuration
-│   └── kumacub.service             # Systemd unit file
 ├── src/kumacub/
 │   ├── application/
 │   │   └── services/
-│   │       ├── runner.py           # Check execution orchestration
-│   │       └── daemon.py           # Main daemon service for scheduled checks
+│   │       ├── runner.py            # Check execution orchestration
+│   │       ├── translators.py       # Result translators
+│   │       └── daemon.py            # Main daemon service for scheduled checks
+│   ├── data/
+│   │   └── config.toml              # Example configuration
+│   │   └── kumacub.service          # Systemd unit file
 │   ├── domain/
 │   │   └── models.py                # Core domain models
 │   ├── infrastructure/
