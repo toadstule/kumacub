@@ -113,6 +113,46 @@ Key style guidelines:
 - Ensure all tests pass and code coverage remains at least 90%
 - Reference any related issues in your PR description
 
+## Architecture: Three Stages (Execute → Parse → Publish)
+
+KumaCub processes each check in three clear stages, orchestrated by `src/kumacub/application/services/runner.py`:
+
+### Execute (executor)
+  - Runs the check command and captures the result.
+  - Implementations live under `src/kumacub/infrastructure/executors/`.
+  - Default: `process` executor (`process_executor.py`).
+  - Protocol and factory: `infrastructure.executors.ExecutorP` and `get_executor()`.
+
+### Parse (parser)
+  - Converts raw executor output into a structured model (e.g., Nagios-compatible fields).
+  - Implementations live under `src/kumacub/infrastructure/parsers/`.
+  - Default: `nagios` parser (`nagios.py`).
+  - Protocol and factory: `infrastructure.parsers.ParserP` and `get_parser()`.
+
+### Publish (publisher)
+  - Sends the structured result to a destination (e.g., stdout or Uptime Kuma push).
+  - Implementations live under `src/kumacub/infrastructure/publishers/`.
+  - Built-ins: `stdout` and `uptime_kuma`.
+  - Protocol and factory: `infrastructure.publishers.PublisherP` and `get_publisher()`.
+
+### How the stages connect
+
+- The runner builds executor args from the `Check` model and calls the executor.
+- Translator functions map outputs between stages:
+  - `executor_to_parser(...)` and `parser_to_publisher(...)` in `src/kumacub/application/services/translators.py`.
+- This keeps executors/parsers/publishers decoupled and composable.
+
+### Adding a new executor, parser, or publisher
+
+- **Executor**: Add a new executor in `infrastructure/executors/`, register it in the module registry, and define its args/output models.
+- **Parser**: Add a new parser in `infrastructure/parsers/`, register it, and define its args/output models.
+- **Publisher**: Add a new publisher in `infrastructure/publishers/`, register it, and define its args model.
+- **Translator**: Add a new match case in `translators.py` to bridge your new component(s):
+  - `(executor_name, parser_name)` in `executor_to_parser(...)`.
+  - `(parser_name, publisher_name)` in `parser_to_publisher(...)`.
+
+See `src/kumacub/domain/models.py` for the `Check` schema that wires `executor`, `parser`, `publisher`, and `schedule` together.
+
 ## Reporting Issues
 
 When reporting issues, please include:

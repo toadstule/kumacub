@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Monitoring",
 ]
 description = "Run local Nagios-compatible checks; push results to Uptime Kuma"
 dependencies = [
