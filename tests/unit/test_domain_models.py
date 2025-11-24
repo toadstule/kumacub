@@ -28,9 +28,7 @@ class TestCheckModel:
             name="test_check",
             executor=models.Executor(command="echo"),
             parser=models.Parser(),
-            publisher=models.create_publisher(
-                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
-            ),
+            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
             schedule=models.Schedule(),
         )
         assert check.name == "test_check"
@@ -48,9 +46,7 @@ class TestCheckModel:
                 command="/usr/local/bin/check_disk", args=["-w", "80%", "-c", "90%"], env={"PATH": "/usr/bin"}
             ),
             parser=models.Parser(),
-            publisher=models.create_publisher(
-                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
-            ),
+            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
             schedule=models.Schedule(interval=30.5),
         )
         assert check.name == "full_check"
@@ -66,8 +62,8 @@ class TestCheckModel:
                 name="test",
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
-                publisher=models.create_publisher(
-                    name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                publisher=models.UptimeKumaPublisher(
+                    url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
                 ),
                 schedule=models.Schedule(interval=-1.0),
             )
@@ -81,8 +77,8 @@ class TestCheckModel:
                 name="test",
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
-                publisher=models.create_publisher(
-                    name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                publisher=models.UptimeKumaPublisher(
+                    url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
                 ),
                 schedule=models.Schedule(interval=0),
             )
@@ -95,9 +91,7 @@ class TestCheckModel:
             name="ser_check",
             executor=models.Executor(command="test", args=["arg1"], env={"KEY": "value"}),
             parser=models.Parser(),
-            publisher=models.create_publisher(
-                name="uptime_kuma", url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
-            ),
+            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
             schedule=models.Schedule(interval=45),
         )
 
@@ -115,41 +109,47 @@ class TestCheckModel:
 
 
 class TestPublisherModels:
-    """Tests for publisher models and factory function."""
-
-    def test_create_stdout_publisher(self) -> None:
-        """Test creating a stdout publisher with default values."""
-        publisher = models.create_publisher(name="stdout")
-        assert isinstance(publisher, models.StdoutPublisher)
-        assert publisher.name == "stdout"
-        assert publisher.url == ""
-        assert publisher.push_token.get_secret_value() == ""
-
-    def test_create_uptime_kuma_publisher(self) -> None:
-        """Test creating an Uptime Kuma publisher with required fields."""
-        publisher = models.create_publisher(name="uptime_kuma", url="https://example.com", push_token="test_token")  # noqa: S106
-        assert isinstance(publisher, models.UptimeKumaPublisher)
-        assert publisher.name == "uptime_kuma"
-        assert publisher.url == "https://example.com"
-        assert publisher.push_token.get_secret_value() == "test_token"
-
-    def test_create_uptime_kuma_with_secret_str(self) -> None:
-        """Test creating an Uptime Kuma publisher with SecretStr push_token."""
-        secret = pydantic.SecretStr("test_secret")
-        publisher = models.create_publisher(name="uptime_kuma", url="https://example.com", push_token=secret)
-        assert publisher.push_token.get_secret_value() == "test_secret"
+    """Tests for publisher models and discriminated union validation."""
 
     def test_create_uptime_kuma_missing_url(self) -> None:
-        """Test creating an Uptime Kuma publisher with missing URL."""
-        with pytest.raises(ValueError, match="url and push_token are required for UptimeKumaPublisher"):
-            models.create_publisher(name="uptime_kuma", push_token="test_token")  # noqa: S106
+        """Test that UptimeKumaPublisher requires url field."""
+        with pytest.raises(pydantic.ValidationError, match="url"):
+            models.UptimeKumaPublisher(push_token=pydantic.SecretStr("test_token"))  # type: ignore[call-arg]
 
     def test_create_uptime_kuma_missing_push_token(self) -> None:
-        """Test creating an Uptime Kuma publisher with missing push token."""
-        with pytest.raises(ValueError, match="url and push_token are required for UptimeKumaPublisher"):
-            models.create_publisher(name="uptime_kuma", url="https://example.com")
+        """Test that UptimeKumaPublisher requires push_token field."""
+        with pytest.raises(pydantic.ValidationError, match="push_token"):
+            models.UptimeKumaPublisher(url="https://example.com")  # type: ignore[call-arg]
 
-    def test_create_unknown_publisher(self) -> None:
-        """Test creating a publisher with an unknown type."""
-        with pytest.raises(ValueError, match="Unknown publisher name: unknown"):
-            models.create_publisher(name="unknown")  # type: ignore[arg-type]
+    def test_discriminated_union_stdout(self) -> None:
+        """Test that discriminated union works for stdout publisher."""
+        check = models.Check(
+            name="test",
+            executor=models.Executor(command="echo"),
+            publisher={"name": "stdout"},  # type: ignore[arg-type]
+        )
+        assert isinstance(check.publisher, models.StdoutPublisher)
+
+    def test_discriminated_union_uptime_kuma(self) -> None:
+        """Test that discriminated union works for uptime_kuma publisher."""
+        check = models.Check(
+            name="test",
+            executor=models.Executor(command="echo"),
+            publisher={  # type: ignore[arg-type]
+                "name": "uptime_kuma",
+                "url": "https://example.com",
+                "push_token": "token",
+            },
+        )
+        assert isinstance(check.publisher, models.UptimeKumaPublisher)
+
+    def test_default_publisher_name(self) -> None:
+        """Test that publisher.name defaults to 'uptime_kuma' when not specified."""
+        check = models.Check(
+            name="test",
+            executor=models.Executor(command="echo"),
+            publisher={"url": "https://example.com", "push_token": "token"},  # type: ignore[arg-type]
+        )
+        assert isinstance(check.publisher, models.UptimeKumaPublisher)
+        assert check.publisher.name == "uptime_kuma"
+        assert check.publisher.url == "https://example.com"

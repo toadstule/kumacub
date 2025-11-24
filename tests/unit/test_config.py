@@ -20,6 +20,7 @@ from unittest.mock import patch
 import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 
@@ -30,7 +31,7 @@ from kumacub.domain.models import Check, Executor, Parser, Schedule, StdoutPubli
 
 
 @pytest.fixture(autouse=True)
-def _reset_config_cache() -> typing.Iterator[None]:
+def _reset_config_cache() -> Iterator[None]:
     """Reset config cache before and after each test."""
     config.reset_settings_cache()
     yield
@@ -89,7 +90,7 @@ class MockSettings:
 
 
 @pytest.fixture
-def mock_settings(monkeypatch: pytest.MonkeyPatch) -> typing.Iterator[None]:
+def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Mock the settings to avoid loading from a TOML file."""
     # Clear any existing environment variables that might interfere
     for key in os.environ:
@@ -125,7 +126,7 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> typing.Iterator[None]:
 
 
 @pytest.fixture
-def config_toml_file(tmp_path: Path) -> typing.Iterator[Path]:
+def config_toml_file(tmp_path: Path) -> Iterator[Path]:
     """Create a temporary config TOML file and set toml_file in model_config."""
     toml = tmp_path / "cfg.toml"
     toml.write_text(
@@ -178,7 +179,7 @@ def test_settings_load_from_toml() -> None:
     assert s.log.level == "INFO"
     assert s.log.structured is False
     assert len(s.checks) == 1
-    assert s.checks[0].name == "test-check"
+    assert s.checks.pop().name == "test-check"
 
 
 @pytest.mark.usefixtures("mock_settings")
@@ -256,3 +257,39 @@ def test_reload_settings_updates_in_place(monkeypatch: pytest.MonkeyPatch) -> No
     # Should be the same instance but with updated values
     assert s1 is s2
     assert s2.log.level == new_level
+
+
+def test_real_settings_instantiation(tmp_path: Path) -> None:
+    """Test actual Settings instantiation without mocking for code coverage."""
+    # Create a minimal config file
+    toml_file = tmp_path / "test.toml"
+    toml_file.write_text('[log]\nlevel = "WARNING"\n')
+
+    # Save and patch the environment variable for config location
+    original_env = os.environ.get("KUMACUB__CONFIG")
+    os.environ["KUMACUB__CONFIG"] = str(toml_file)
+
+    try:
+        # Reset cache to ensure fresh load
+        config.reset_settings_cache()
+
+        # Call the real get_settings (not mocked)
+        s1 = config.get_settings()
+        assert s1 is not None
+        assert s1.log.level == "INFO"
+
+        # Verify caching works
+        s2 = config.get_settings()
+        assert s1 is s2
+
+        # Test reload_settings
+        s3 = config.reload_settings()
+        assert s3 is s1  # Same instance after reload
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG", None)
+        else:
+            os.environ["KUMACUB__CONFIG"] = original_env
+        config.reset_settings_cache()

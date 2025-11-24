@@ -10,10 +10,10 @@
 
 """KumaCub data models."""
 
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 import pydantic
-from pydantic import Field
+from pydantic import Field, model_validator
 
 
 class Executor(pydantic.BaseModel):
@@ -29,10 +29,6 @@ class Parser(pydantic.BaseModel):
     """KumaCub Parser."""
 
     name: Literal["nagios"] = "nagios"
-
-
-# Publisher type definitions and utilities
-PublisherName: TypeAlias = Literal["stdout", "uptime_kuma"]
 
 
 class StdoutPublisher(pydantic.BaseModel):
@@ -51,50 +47,12 @@ class UptimeKumaPublisher(pydantic.BaseModel):
     push_token: pydantic.SecretStr
 
 
-# Mapping of publisher names to their respective model classes
-PUBLISHER_TYPES: dict[PublisherName, type[StdoutPublisher] | type[UptimeKumaPublisher]] = {
-    "stdout": StdoutPublisher,
-    "uptime_kuma": UptimeKumaPublisher,
-}
-
-# The union type with discriminator
+# Discriminated union allows Pydantic to select the correct publisher class
+# based on the 'name' field and validate required fields accordingly
 AnyPublisher: TypeAlias = Annotated[
     StdoutPublisher | UptimeKumaPublisher,
     Field(discriminator="name"),
 ]
-
-
-def create_publisher(
-    name: PublisherName,
-    url: str | None = None,
-    push_token: str | pydantic.SecretStr | None = None,
-) -> StdoutPublisher | UptimeKumaPublisher:
-    """Create a publisher instance based on the provided arguments.
-
-    Args:
-        name: The type of publisher to create ("stdout" or "uptime_kuma").
-        url: The URL for the Uptime Kuma instance (required for uptime_kuma).
-        push_token: The push token for authentication (required for uptime_kuma).
-
-    Returns:
-        An instance of the appropriate publisher type.
-
-    Raises:
-        ValueError: If required fields are missing for the specified publisher type.
-    """
-    if name == "stdout":
-        return StdoutPublisher()
-
-    if name == "uptime_kuma":
-        if url is None or push_token is None:
-            msg = "url and push_token are required for UptimeKumaPublisher"
-            raise ValueError(msg)
-        # Convert push_token to SecretStr if it's a string
-        secret_token = pydantic.SecretStr(push_token) if isinstance(push_token, str) else push_token
-        return UptimeKumaPublisher(url=url, push_token=secret_token)
-
-    msg = f"Unknown publisher name: {name}"
-    raise ValueError(msg)
 
 
 class Schedule(pydantic.BaseModel):
@@ -112,4 +70,12 @@ class Check(pydantic.BaseModel):
     publisher: AnyPublisher
     schedule: Schedule = Schedule()
 
-    # No backward compatibility layer - publisher.name is now required
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_publisher_name(cls, data: Any) -> Any:  # noqa: ANN401
+        """Set default publisher name to 'uptime_kuma' if not specified."""
+        if isinstance(data, dict):
+            publisher = data.get("publisher")
+            if isinstance(publisher, dict) and "name" not in publisher:
+                publisher["name"] = "uptime_kuma"
+        return data

@@ -68,11 +68,7 @@ class TestParserToPublisher:
         check = models.Check(
             name="test-check",
             executor=models.Executor(command="echo", args=["test"]),
-            publisher=models.create_publisher(
-                name="stdout",
-                url="",
-                push_token=pydantic.SecretStr(""),
-            ),
+            publisher=models.StdoutPublisher(),
         )
 
         with pytest.raises(ValueError, match="No translator for fake parser -> stdout publisher"):
@@ -95,8 +91,7 @@ class TestParserToPublisher:
         check = models.Check(
             name="test-check",
             executor=models.Executor(command="echo", args=["test"]),
-            publisher=models.create_publisher(
-                name="uptime_kuma",
+            publisher=models.UptimeKumaPublisher(
                 url="https://example.com",
                 push_token=pydantic.SecretStr("token"),
             ),
