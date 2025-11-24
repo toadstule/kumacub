@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Annotated, Literal
+from typing import Literal
 
 import pydantic
 import pydantic_settings
@@ -41,9 +41,6 @@ class Settings(pydantic_settings.BaseSettings):
         extra="ignore",
         toml_file=os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml"),
     )
-
-    # App identity
-    service_name: Annotated[str, pydantic.StringConstraints(strip_whitespace=True, min_length=1)] = "kumacub"
 
     # Checks configuration
     checks: list[models.Check] = []
