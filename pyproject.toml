@@ -41,7 +41,7 @@ license-files = ["LICENSE"]
 name = "kumacub"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "0.5.0"
+version = "0.6.0"
 
 [project.scripts]
 kumacub = "kumacub.entrypoints.cli:main"
