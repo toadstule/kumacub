@@ -1,9 +1,11 @@
 # KumaCub Configuration
 
+
 # Logging configuration
 [log]
 level = "INFO"  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 structured = false  # Whether to use structured (JSON) logging
+
 
 # Checks configuration
 

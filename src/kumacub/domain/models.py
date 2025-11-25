@@ -10,9 +10,10 @@
 
 """KumaCub data models."""
 
-from typing import Literal
+from typing import Annotated, Any, Literal, TypeAlias
 
 import pydantic
+from pydantic import Field, model_validator
 
 
 class Executor(pydantic.BaseModel):
@@ -30,12 +31,28 @@ class Parser(pydantic.BaseModel):
     name: Literal["nagios"] = "nagios"
 
 
-class Publisher(pydantic.BaseModel):
-    """KumaCub Publisher."""
+class StdoutPublisher(pydantic.BaseModel):
+    """Stdout Publisher."""
 
-    name: Literal["stdout", "uptime_kuma"] = "uptime_kuma"
+    name: Literal["stdout"] = "stdout"
+    url: str = ""
+    push_token: pydantic.SecretStr = pydantic.SecretStr("")
+
+
+class UptimeKumaPublisher(pydantic.BaseModel):
+    """Uptime Kuma Publisher."""
+
+    name: Literal["uptime_kuma"] = "uptime_kuma"
     url: str
     push_token: pydantic.SecretStr
+
+
+# Discriminated union allows Pydantic to select the correct publisher class
+# based on the 'name' field and validate required fields accordingly
+AnyPublisher: TypeAlias = Annotated[
+    StdoutPublisher | UptimeKumaPublisher,
+    Field(discriminator="name"),
+]
 
 
 class Schedule(pydantic.BaseModel):
@@ -50,5 +67,15 @@ class Check(pydantic.BaseModel):
     name: str
     executor: Executor
     parser: Parser = Parser()
-    publisher: Publisher
+    publisher: AnyPublisher
     schedule: Schedule = Schedule()
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_publisher_name(cls, data: Any) -> Any:  # noqa: ANN401
+        """Set default publisher name to 'uptime_kuma' if not specified."""
+        if isinstance(data, dict):
+            publisher = data.get("publisher")
+            if isinstance(publisher, dict) and "name" not in publisher:
+                publisher["name"] = "uptime_kuma"
+        return data
