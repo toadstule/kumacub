@@ -2,7 +2,22 @@
 
 **Run local checks; push results to Uptime Kuma.**
 
-KumaCub is a lightweight daemon that executes scheduled health checks and pushes the results to [Uptime Kuma](https://github.com/louislam/uptime-kuma). It supports Nagios-compatible check scripts and provides flexible configuration via TOML files or environment variables.
+KumaCub is a lightweight daemon that executes scheduled health checks and pushes the results to
+[Uptime Kuma](https://github.com/louislam/uptime-kuma).
+It supports Nagios-compatible check scripts and provides flexible configuration via TOML files or environment variables.
+
+Nagios-compatible check scripts are easy to find (and easy to write). You can find more than 50 of them at the
+[Monitoring Plugins](https://www.monitoring-plugins.org/) website alone. There are checks for local system metrics,
+such as:
+
+  - Disk space
+  - Disk/RAID health 
+  - Load averages
+  - Processes
+  - System clock (NTP)
+  - and more...
+
+KumaCub allows you to execute these plugins locally, and push the results to Uptime Kuma.
 
 ## Installation
 
@@ -14,6 +29,9 @@ Installing this way will also install the systemd unit file and a sample config 
 ```bash
 # Install from AUR (we'll use `yay` for this example)
 yay -S kumacub
+
+# Optionally, install the monitoring-plugins package
+yay -S monitoring-plugins
 ```
 
 ### Manual Installation (PIP)
@@ -27,7 +45,8 @@ sudo kumacub install
 
 ### Quick Setup with uv
 
-If you prefer to use uv, you can set up your systemd service to use uv to run KumaCub.
+If you prefer to use [uv](https://github.com/astral-sh/uv), you can set up your systemd service to use uv to run
+KumaCub.
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/):
     ```bash
@@ -57,7 +76,8 @@ If you prefer to use uv, you can set up your systemd service to use uv to run Ku
 
 ## Configuration
 
-KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this with the `KUMACUB__CONFIG` environment variable.
+KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this
+with the `KUMACUB__CONFIG` environment variable.
 
 ### Example Configuration
 
@@ -155,11 +175,14 @@ sudo systemctl disable kumacub
 
 ## License
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, version 3.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
 
 ## Contributing
 
