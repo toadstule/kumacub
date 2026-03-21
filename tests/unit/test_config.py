@@ -1,5 +1,5 @@
 #  KumaCub - Run local checks; push results to Uptime Kuma.
-#  Copyright (c) 2025 Stephen T. Jibson.
+#  Copyright (c) 2025-2026 Stephen T. Jibson.
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 #  License as published by the Free Software Foundation, version 3.
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -276,7 +276,7 @@ def test_real_settings_instantiation(tmp_path: Path) -> None:
         # Call the real get_settings (not mocked)
         s1 = config.get_settings()
         assert s1 is not None
-        assert s1.log.level == "INFO"
+        assert s1.log.level == "WARNING"
 
         # Verify caching works
         s2 = config.get_settings()
