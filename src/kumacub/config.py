@@ -1,5 +1,5 @@
 #  KumaCub - Run local checks; push results to Uptime Kuma.
-#  Copyright (c) 2025 Stephen T. Jibson.
+#  Copyright (c) 2025-2026 Stephen T. Jibson.
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 #  License as published by the Free Software Foundation, version 3.
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -39,7 +39,6 @@ class Settings(pydantic_settings.BaseSettings):
         env_nested_delimiter="__",
         env_prefix="KUMACUB__",
         extra="ignore",
-        toml_file=os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml"),
     )
 
     # Checks configuration
@@ -58,12 +57,14 @@ class Settings(pydantic_settings.BaseSettings):
         file_secret_settings: pydantic_settings.PydanticBaseSettingsSource,
     ) -> tuple[pydantic_settings.PydanticBaseSettingsSource, ...]:
         """Add TOML file source and prioritize: env > TOML > init > .env > secrets."""
+        # Get the TOML file path from environment at runtime, not class definition time
+        toml_file = os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml")
         return (
             init_settings,
             env_settings,
             dotenv_settings,
             file_secret_settings,
-            pydantic_settings.TomlConfigSettingsSource(settings_cls),
+            pydantic_settings.TomlConfigSettingsSource(settings_cls, toml_file),
         )
 
 
