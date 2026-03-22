@@ -12,22 +12,24 @@
 from __future__ import annotations
 
 import os
+import pathlib
+import tempfile
 import textwrap
+import tomllib
 import typing
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+import pydantic_settings
 import pytest
+
+from kumacub import config
+from kumacub.config import _DirectoryTomlConfigSettingsSource
+from kumacub.domain.models import Check, Executor, Parser, Schedule, StdoutPublisher
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
-
-
-import pydantic_settings
-
-from kumacub import config
-from kumacub.domain.models import Check, Executor, Parser, Schedule, StdoutPublisher
 
 
 @pytest.fixture(autouse=True)
@@ -293,3 +295,253 @@ def test_real_settings_instantiation(tmp_path: Path) -> None:
         else:
             os.environ["KUMACUB__CONFIG"] = original_env
         config.reset_settings_cache()
+
+
+@pytest.fixture
+def config_toml_directory(tmp_path: Path) -> Path:
+    """Create a temporary config directory with multiple TOML files."""
+    config_dir = tmp_path / "conf.d"
+    config_dir.mkdir()
+
+    # Create multiple TOML files
+    (config_dir / "01_base.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "INFO"
+            structured = true
+
+            [[checks]]
+            name = "base-check"
+            executor.command = "echo"
+            executor.args = ["base"]
+            publisher.name = "stdout"
+            """
+        )
+    )
+
+    (config_dir / "02_override.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "DEBUG"
+
+            [[checks]]
+            name = "override-check"
+            executor.command = "echo"
+            executor.args = ["override"]
+            publisher.name = "stdout"
+            """
+        )
+    )
+
+    (config_dir / "03_additional.toml").write_text(
+        textwrap.dedent(
+            """
+            [[checks]]
+            name = "additional-check"
+            executor.command = "echo"
+            executor.args = ["additional"]
+            publisher.name = "stdout"
+            """
+        )
+    )
+
+    return config_dir
+
+
+def test_directory_toml_loading(config_toml_directory: Path) -> None:
+    """Test loading multiple TOML files from a directory."""
+    # Save original environment
+    original_env = os.environ.get("KUMACUB__CONFIG_DIR")
+    os.environ["KUMACUB__CONFIG_DIR"] = str(config_toml_directory)
+
+    try:
+        # Reset cache to ensure fresh load
+        config.reset_settings_cache()
+
+        # Load settings from directory
+        settings = config.get_settings()
+
+        # Check that log level from last file wins (DEBUG from 02_override.toml)
+        assert settings.log.level == "DEBUG"
+        assert settings.log.structured is True  # From 01_base.toml
+
+        # With shallow merge, the last file's checks list replaces all previous ones
+        # So we only get the checks from 03_additional.toml (last alphabetically)
+        assert len(settings.checks) == 1
+        assert settings.checks[0].name == "additional-check"
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG_DIR", None)
+        else:
+            os.environ["KUMACUB__CONFIG_DIR"] = original_env
+        config.reset_settings_cache()
+
+
+def test_directory_toml_merge_order(tmp_path: Path) -> None:
+    """Test that TOML files are merged in alphabetical order."""
+    config_dir = tmp_path / "conf.d"
+    config_dir.mkdir()
+
+    # Create files in non-alphabetical order to test sorting
+    (config_dir / "z_last.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "ERROR"
+            """
+        )
+    )
+
+    (config_dir / "a_first.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "INFO"
+            structured = false
+            """
+        )
+    )
+
+    (config_dir / "m_middle.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "WARNING"
+            """
+        )
+    )
+
+    # Save original environment
+    original_env = os.environ.get("KUMACUB__CONFIG_DIR")
+    os.environ["KUMACUB__CONFIG_DIR"] = str(config_dir)
+
+    try:
+        config.reset_settings_cache()
+        settings = config.get_settings()
+
+        # Should be ERROR from z_last.toml (last in alphabetical order)
+        assert settings.log.level == "ERROR"
+        # structured should be true from the default LogSettings, since none of the files
+        # after a_first.toml override it
+        assert settings.log.structured is True
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG_DIR", None)
+        else:
+            os.environ["KUMACUB__CONFIG_DIR"] = original_env
+        config.reset_settings_cache()
+
+
+def test_empty_config_directory(tmp_path: Path) -> None:
+    """Test behavior with empty config directory."""
+    config_dir = tmp_path / "empty_conf.d"
+    config_dir.mkdir()
+
+    # Save original environment
+    original_env = os.environ.get("KUMACUB__CONFIG_DIR")
+    os.environ["KUMACUB__CONFIG_DIR"] = str(config_dir)
+
+    try:
+        config.reset_settings_cache()
+        settings = config.get_settings()
+
+        # Should load with defaults (no errors)
+        assert settings.log.level == "INFO"  # Default value
+        assert len(settings.checks) == 0  # Default value
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG_DIR", None)
+        else:
+            os.environ["KUMACUB__CONFIG_DIR"] = original_env
+        config.reset_settings_cache()
+
+
+def test_nonexistent_config_directory(tmp_path: Path) -> None:
+    """Test behavior with non-existent config directory."""
+    nonexistent_dir = tmp_path / "nonexistent"
+
+    # Save original environment
+    original_env = os.environ.get("KUMACUB__CONFIG_DIR")
+    os.environ["KUMACUB__CONFIG_DIR"] = str(nonexistent_dir)
+
+    try:
+        config.reset_settings_cache()
+        settings = config.get_settings()
+
+        # Should load with defaults (no errors)
+        assert settings.log.level == "INFO"  # Default value
+        assert len(settings.checks) == 0  # Default value
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG_DIR", None)
+        else:
+            os.environ["KUMACUB__CONFIG_DIR"] = original_env
+        config.reset_settings_cache()
+
+
+def test_invalid_toml_in_directory(tmp_path: Path) -> None:
+    """Test handling of invalid TOML files in directory."""
+    config_dir = tmp_path / "conf.d"
+    config_dir.mkdir()
+
+    # Create a valid TOML file
+    (config_dir / "valid.toml").write_text(
+        textwrap.dedent(
+            """
+            [log]
+            level = "INFO"
+            """
+        )
+    )
+
+    # Create an invalid TOML file
+    (config_dir / "invalid.toml").write_text("invalid toml content [")
+
+    # Save original environment
+    original_env = os.environ.get("KUMACUB__CONFIG_DIR")
+    os.environ["KUMACUB__CONFIG_DIR"] = str(config_dir)
+
+    try:
+        config.reset_settings_cache()
+
+        # Should raise an exception when trying to load invalid TOML
+        with pytest.raises(tomllib.TOMLDecodeError):  # tomllib.TOMLDecodeError or similar
+            config.get_settings()
+
+    finally:
+        # Restore original environment
+        if original_env is None:
+            os.environ.pop("KUMACUB__CONFIG_DIR", None)
+        else:
+            os.environ["KUMACUB__CONFIG_DIR"] = original_env
+        config.reset_settings_cache()
+
+
+def test_directory_toml_source_directly() -> None:
+    """Test the _DirectoryTomlConfigSettingsSource class directly."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        config_dir = pathlib.Path(tmp_dir)
+
+        # Create test TOML files
+        (config_dir / "test1.toml").write_text('key1 = "value1"\n')
+        (config_dir / "test2.toml").write_text('key2 = "value2"\nkey1 = "overridden"\n')
+
+        # Create the source
+        source = _DirectoryTomlConfigSettingsSource(config.Settings, str(config_dir))
+
+        # Call the source to get merged data
+        data = source()
+
+        # Check that both files were loaded and merged
+        assert data["key1"] == "overridden"  # From test2.toml (later alphabetically)
+        assert data["key2"] == "value2"  # From test2.toml

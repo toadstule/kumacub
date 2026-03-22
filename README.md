@@ -76,10 +76,46 @@ KumaCub.
 
 ## Configuration
 
-KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this
+KumaCub uses TOML configuration files. By default, it looks for `/etc/kumacub/config.toml`, but you can override this
 with the `KUMACUB__CONFIG` environment variable.
 
+### Configuration Sources
+
+KumaCub supports multiple configuration sources that are merged in order of priority (highest to lowest):
+
+1. **Environment variables** (`KUMACUB__*`)
+2. **Main TOML file** (`KUMACUB__CONFIG`, default: `/etc/kumacub/config.toml`)
+3. **Configuration directory** (`KUMACUB__CONFIG_DIR`, default: `/etc/kumacub/conf.d/`)
+
+### Configuration Directory
+
+You can place multiple TOML files in the configuration directory (`/etc/kumacub/conf.d/` by default). All `.toml` files in this directory will be loaded and merged in alphabetical order. Later files override earlier values.
+
+```bash
+# Override config directory location
+export KUMACUB__CONFIG_DIR=/path/to/conf.d/
+
+# Example directory structure:
+/etc/kumacub/
+├── config.toml                 # Base configuration (logging, etc.)
+└── conf.d/
+    ├── 01_disk_usage.toml      # Disk usage check
+    ├── 02_system_time.toml     # NTP check
+    ├── 03_system_load.toml     # Load average check
+    └── 99_production_overrides.toml  # Environment overrides
+```
+
+This approach is useful for:
+- Splitting large configurations into logical sections
+- Package managers that drop config files
+- Environment-specific overrides
+- Modular configuration management
+
 ### Example Configuration
+
+#### Single File Configuration
+
+For simple setups, you can use a single configuration file:
 
 ```toml
 # Logging configuration
@@ -114,6 +150,59 @@ publisher.push_token = "your-push-token-here"
 schedule.interval = 30
 ```
 
+#### Split Configuration (Directory-based)
+
+For more complex setups, you can split configuration across multiple files:
+
+**/etc/kumacub/config.toml** (base configuration):
+```toml
+# Base logging configuration
+[log]
+level = "INFO"
+structured = true
+```
+
+**/etc/kumacub/conf.d/01_disk_usage.toml:**
+```toml
+[[checks]]
+name = "disk usage"
+executor.command = "/usr/lib/monitoring-plugins/check_disk"
+executor.args = ["-c", "90"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 60
+```
+
+**/etc/kumacub/conf.d/02_system_time.toml:**
+```toml
+[[checks]]
+name = "system time (ntp)"
+executor.command = "/usr/lib/monitoring-plugins/check_ntp_time"
+executor.args = ["-H", "pool.ntp.org", "-c", "10"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+```
+
+**/etc/kumacub/conf.d/03_system_load.toml:**
+```toml
+[[checks]]
+name = "system load"
+executor.command = "check_load"
+executor.args = ["-c", "10", "-w", "10"]
+executor.env = { "PATH" = "/usr/lib/monitoring-plugins" }
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+```
+
+**/etc/kumacub/conf.d/99_production_overrides.toml:**
+```toml
+# Production environment overrides
+[log]
+level = "WARNING"
+```
+
 ### Configuration Fields
 
 #### Check Configuration
@@ -135,6 +224,9 @@ You can override any configuration value using environment variables with the `K
 ```bash
 # Override config file location
 export KUMACUB__CONFIG=/path/to/config.toml
+
+# Override config directory location
+export KUMACUB__CONFIG_DIR=/path/to/conf.d/
 
 # Override log level
 export KUMACUB__LOG__LEVEL=DEBUG

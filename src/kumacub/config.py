@@ -15,13 +15,33 @@ Uses Pydantic v2 and pydantic-settings. See README for details.
 from __future__ import annotations
 
 import os
+import pathlib
+import tomllib
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
 import pydantic
 import pydantic_settings
 
 from kumacub.domain import models  # noqa: TC001
+
+
+class _DirectoryTomlConfigSettingsSource(pydantic_settings.PydanticBaseSettingsSource):
+    def __init__(self, settings_cls: type[pydantic_settings.BaseSettings], toml_dir: str) -> None:
+        super().__init__(settings_cls)
+        self.toml_dir = pathlib.Path(toml_dir)
+
+    def get_field_value(self, field: pydantic.fields.FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+        del field  # Unused.  # pragma: no cover
+        return None, field_name, False  # pragma: no cover
+
+    def __call__(self) -> dict[str, Any]:
+        merged_data = {}
+        # Load and merge all .toml files in the directory
+        for toml_file in sorted(self.toml_dir.glob("*.toml")):
+            with toml_file.open("rb") as f:
+                merged_data.update(tomllib.load(f))  # Shallow update
+        return merged_data
 
 
 class LogSettings(pydantic.BaseModel):
@@ -59,12 +79,14 @@ class Settings(pydantic_settings.BaseSettings):
         """Add TOML file source and prioritize: env > TOML > init > .env > secrets."""
         # Get the TOML file path from environment at runtime, not class definition time
         toml_file = os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml")
+        toml_dir = os.environ.get("KUMACUB__CONFIG_DIR", "/etc/kumacub/conf.d")
         return (
             init_settings,
             env_settings,
             dotenv_settings,
             file_secret_settings,
             pydantic_settings.TomlConfigSettingsSource(settings_cls, toml_file),
+            _DirectoryTomlConfigSettingsSource(settings_cls, toml_dir),
         )
 
 
