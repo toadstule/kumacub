@@ -27,21 +27,60 @@ from kumacub.domain import models  # noqa: TC001
 
 
 class _DirectoryTomlConfigSettingsSource(pydantic_settings.PydanticBaseSettingsSource):
-    def __init__(self, settings_cls: type[pydantic_settings.BaseSettings], toml_dir: str) -> None:
+    def __init__(
+        self,
+        settings_cls: type[pydantic_settings.BaseSettings],
+        main_toml_file: str | None = None,
+        checks_toml_dir: str | None = None,
+    ) -> None:
         super().__init__(settings_cls)
-        self.toml_dir = pathlib.Path(toml_dir)
+        self.main_toml_file = pathlib.Path(main_toml_file) if main_toml_file else None
+        self.checks_toml_dir = pathlib.Path(checks_toml_dir) if checks_toml_dir else None
 
     def get_field_value(self, field: pydantic.fields.FieldInfo, field_name: str) -> tuple[Any, str, bool]:
         del field  # Unused.  # pragma: no cover
         return None, field_name, False  # pragma: no cover
 
     def __call__(self) -> dict[str, Any]:
-        merged_data = {}
-        # Load and merge all .toml files in the directory
-        for toml_file in sorted(self.toml_dir.glob("*.toml")):
-            with toml_file.open("rb") as f:
-                merged_data.update(tomllib.load(f))  # Shallow update
-        return merged_data
+        non_check_data = {}
+        all_checks = []
+        all_toml_files: list[pathlib.Path] = []
+
+        if self.checks_toml_dir is not None and self.checks_toml_dir.is_dir():
+            all_toml_files.extend(sorted(self.checks_toml_dir.glob("*.toml")))
+        if self.main_toml_file is not None and self.main_toml_file.is_file():
+            all_toml_files.append(self.main_toml_file)
+
+        for toml_file in all_toml_files:
+            try:
+                with toml_file.open("rb") as f:
+                    data = tomllib.load(f)
+            except OSError as e:
+                # If any file can't be read, abort with clear error.
+                msg = f"Failed to read TOML file {toml_file}: {e}"
+                raise SystemExit(msg) from e
+            except tomllib.TOMLDecodeError as e:
+                # Invalid TOML should cause configuration to fail.
+                msg = f"Invalid TOML in {toml_file}: {e}"
+                raise SystemExit(msg) from e
+
+            # Extract checks if present
+            if "checks" in data:
+                all_checks.extend(data["checks"])
+                del data["checks"]  # Remove from data to handle separately.
+
+            if toml_file == self.main_toml_file:
+                non_check_data = data
+            elif data:
+                msg = f"{toml_file} can only contain [[checks]] sections"
+                raise SystemExit(msg)
+
+        if not all_checks:
+            msg = "No checks found in configuration"
+            raise SystemExit(msg)
+
+        non_check_data["checks"] = all_checks
+        return non_check_data
 
 
 class LogSettings(pydantic.BaseModel):
@@ -77,16 +116,16 @@ class Settings(pydantic_settings.BaseSettings):
         file_secret_settings: pydantic_settings.PydanticBaseSettingsSource,
     ) -> tuple[pydantic_settings.PydanticBaseSettingsSource, ...]:
         """Add TOML file source and prioritize: env > TOML > init > .env > secrets."""
-        # Get the TOML file path from environment at runtime, not class definition time
-        toml_file = os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml")
-        toml_dir = os.environ.get("KUMACUB__CONFIG_DIR", "/etc/kumacub/conf.d")
+        main_toml_file = os.environ.get("KUMACUB__CONFIG", "/etc/kumacub/config.toml")
+        checks_toml_dir = os.environ.get("KUMACUB__CHECKS_DIR", "/etc/kumacub/checks.d")
         return (
             init_settings,
             env_settings,
             dotenv_settings,
             file_secret_settings,
-            pydantic_settings.TomlConfigSettingsSource(settings_cls, toml_file),
-            _DirectoryTomlConfigSettingsSource(settings_cls, toml_dir),
+            _DirectoryTomlConfigSettingsSource(
+                settings_cls, main_toml_file=main_toml_file, checks_toml_dir=checks_toml_dir
+            ),
         )
 
 
