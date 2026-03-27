@@ -76,18 +76,53 @@ KumaCub.
 
 ## Configuration
 
-KumaCub uses a TOML configuration file. By default, it looks for `/etc/kumacub/config.toml`, but you can override this
+KumaCub uses TOML configuration files. By default, it looks for `/etc/kumacub/config.toml`, but you can override this
 with the `KUMACUB__CONFIG` environment variable.
+
+### Configuration Sources
+
+KumaCub supports multiple configuration sources that are merged in order of priority (highest to lowest):
+
+1. **Environment variables** (`KUMACUB__*`)
+2. **Main config file** (`KUMACUB__CONFIG`, default: `/etc/kumacub/config.toml`)
+3. **Checks directory** (`KUMACUB__CHECKS_DIR`, default: `/etc/kumacub/checks.d/`)
+
+### Configuration Directory
+
+You can place multiple TOML files in the checks directory (`/etc/kumacub/checks.d/` by default). All `.toml` files in this directory will be loaded and merged in alphabetical order.
+
+**Important**: Files in the checks directory can **only** contain `[[checks]]` sections. Other configuration (like `[log]`) must be in the main config file.
+
+**Checks Accumulation**: All `[[checks]]` entries from both the main config file and all files in the checks directory are accumulated into a single list. This means you can distribute your checks across multiple files and they will all be executed.
+
+```bash
+# Override checks directory location.
+export KUMACUB__CHECKS_DIR=/path/to/checks.d/
+```
+
+# Example directory structure:
+```text
+/etc/kumacub/
+├── config.toml                 # Base configuration (logging, etc.)
+└── checks.d/
+    ├── 01_disk_usage.toml      # Disk usage check
+    ├── 02_system_time.toml     # NTP check
+    └── 03_system_load.toml     # Load average check
+```
 
 ### Example Configuration
 
+#### Single File Configuration
+
+For simple setups, you can use a single configuration file:
+
 ```toml
-# Logging configuration
+# Logging configuration.
 [log]
 level = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 structured = true  # Use JSON-formatted logs
 
-# Define checks
+# Define checks.
 [[checks]]
 name = "disk usage"
 executor.command = "/usr/lib/monitoring-plugins/check_disk"
@@ -104,6 +139,52 @@ publisher.url = "https://uptime-kuma.example.com"
 publisher.push_token = "your-push-token-here"
 schedule.interval = 30
 
+[[checks]]
+name = "system load"
+executor.command = "check_load"
+executor.args = ["-c", "10", "-w", "10"]
+executor.env = { "PATH" = "/usr/lib/monitoring-plugins" }
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+```
+
+#### Split Configuration (Directory-based)
+
+For more complex setups, you can split configuration across multiple files:
+
+**/etc/kumacub/config.toml** (base configuration):
+```toml
+# Base logging configuration.
+[log]
+level = "INFO"
+structured = true
+```
+
+**/etc/kumacub/checks.d/01_disk_usage.toml:**
+```toml
+[[checks]]
+name = "disk usage"
+executor.command = "/usr/lib/monitoring-plugins/check_disk"
+executor.args = ["-c", "90"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 60
+```
+
+**/etc/kumacub/checks.d/02_system_time.toml:**
+```toml
+[[checks]]
+name = "system time (ntp)"
+executor.command = "/usr/lib/monitoring-plugins/check_ntp_time"
+executor.args = ["-H", "pool.ntp.org", "-c", "10"]
+publisher.url = "https://uptime-kuma.example.com"
+publisher.push_token = "your-push-token-here"
+schedule.interval = 30
+```
+
+**/etc/kumacub/checks.d/03_system_load.toml:**
+```toml
 [[checks]]
 name = "system load"
 executor.command = "check_load"
@@ -133,13 +214,16 @@ Each `[[checks]]` entry supports:
 You can override any configuration value using environment variables with the `KUMACUB__` prefix:
 
 ```bash
-# Override config file location
+# Override config file location.
 export KUMACUB__CONFIG=/path/to/config.toml
 
-# Override log level
+# Override checks directory location.
+export KUMACUB__CHECKS_DIR=/path/to/checks.d/
+
+# Override log level.
 export KUMACUB__LOG__LEVEL=DEBUG
 
-# Override log format
+# Override log format.
 export KUMACUB__LOG__STRUCTURED=false
 ```
 
@@ -148,28 +232,28 @@ export KUMACUB__LOG__STRUCTURED=false
 ### Managing the Systemd Service
 
 ```bash
-# Start the service
+# Start the service.
 sudo systemctl start kumacub
 
-# Stop the service
+# Stop the service.
 sudo systemctl stop kumacub
 
-# Restart the service
+# Restart the service.
 sudo systemctl restart kumacub
 
-# Reload configuration without restarting
+# Reload configuration without restarting.
 sudo systemctl reload kumacub
 
-# Check service status
+# Check service status.
 sudo systemctl status kumacub
 
-# View logs
+# View logs.
 sudo journalctl -u kumacub -f
 
-# Enable on boot
+# Enable on boot.
 sudo systemctl enable kumacub
 
-# Disable on boot
+# Disable on boot.
 sudo systemctl disable kumacub
 ```
 

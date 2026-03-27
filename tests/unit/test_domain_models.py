@@ -53,7 +53,7 @@ class TestCheckModel:
         assert check.executor.command == "/usr/local/bin/check_disk"
         assert check.executor.args == ["-w", "80%", "-c", "90%"]
         assert check.executor.env == {"PATH": "/usr/bin"}
-        assert check.schedule.interval == 30.5  # noqa: PLR2004
+        assert check.schedule.interval == 30.5
 
     def test_interval_must_be_positive(self) -> None:
         """Test that interval must be positive."""
