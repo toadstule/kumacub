@@ -1,5 +1,13 @@
 # KumaCub
 
+![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kumacub)
+![PyPI - Version](https://img.shields.io/pypi/v/kumacub)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/kumacub)
+
+
+
 **Run local checks; push results to Uptime Kuma.**
 
 KumaCub is a lightweight daemon that executes scheduled health checks and pushes the results to

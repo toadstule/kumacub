@@ -1,5 +1,5 @@
 #  KumaCub - Run local checks; push results to Uptime Kuma.
-#  Copyright (c) 2025 Stephen T. Jibson.
+#  Copyright (c) 2025-2026 Stephen T. Jibson.
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 #  License as published by the Free Software Foundation, version 3.
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -9,14 +9,16 @@
 
 """Tests for domain models and their validation rules."""
 
+from typing import Final
+
 import pydantic
 import pytest
 
 from kumacub.domain import models
 
 # Constants for testing
-DEFAULT_INTERVAL = 60
-MAX_MSG_LENGTH = 250
+DEFAULT_INTERVAL: Final[int] = 60
+MAX_MSG_LENGTH: Final[int] = 250
 
 
 class TestCheckModel:
