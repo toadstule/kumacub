@@ -6,7 +6,6 @@ PRESET_VARS := $(.VARIABLES)
 # Project variables
 TEST_COVERAGE   := 90
 PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
-PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
 PYTHON_VERSION_ := $(shell cat .python-version)
 VERSION         := $(shell grep -e '^version =' pyproject.toml | cut -d'"' -f2)
 WHEEL           := dist/$(PROJECT_NAME)-$(VERSION)-py3-none-any.whl
@@ -58,8 +57,8 @@ install: venv-check $(WHEEL)  ## Install the package in development mode.
 
 .PHONY: format
 format:  ## Format the code; sort the imports.
-	@$(RUFF) format $(PY_FILES)
-	@$(RUFF) check --fix --select I $(PY_FILES)
+	@$(RUFF) format src tests
+	@$(RUFF) check --fix --select I src tests
 
 .PHONY: help
 help:  ## Display this help.
@@ -67,9 +66,9 @@ help:  ## Display this help.
 
 .PHONY: lint
 lint: format  ## Lint the code.
-	@$(RUFF) format --check $(PY_FILES)
-	@$(RUFF) check $(PY_FILES)
-	@$(MYPY) --non-interactive --no-pretty $(PY_FILES)
+	@$(RUFF) format --check src tests
+	@$(RUFF) check src tests
+	@$(MYPY) --non-interactive --no-pretty src tests
 
 .PHONY: showvars
 showvars:  ## Display variables available in the Makefile.
@@ -95,5 +94,5 @@ endif
 uv.lock:
 	@$(UV) lock
 
-$(WHEEL): $(PY_FILES) pyproject.toml uv.lock dep
+$(WHEEL): src pyproject.toml uv.lock dep
 	@$(UV) build
