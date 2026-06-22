@@ -17,6 +17,8 @@ import pydantic
 class StdoutPublishArgs(pydantic.BaseModel):
     """Arguments for the publisher."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     id: str
     status: Literal["", "down", "up"] = ""
     msg: str = pydantic.Field(default="", max_length=250)

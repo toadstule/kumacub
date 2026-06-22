@@ -19,8 +19,10 @@ import structlog
 class ProcessExecutorArgs(pydantic.BaseModel):
     """Process executor args."""
 
-    id: str
-    command: str
+    model_config = pydantic.ConfigDict(frozen=True)
+
+    id: str = pydantic.Field(min_length=1)
+    command: str = pydantic.Field(min_length=1)
     args: list[str] = []
     env: dict[str, str] = {}
 
@@ -28,9 +30,11 @@ class ProcessExecutorArgs(pydantic.BaseModel):
 class ProcessExecutorOutput(pydantic.BaseModel):
     """Process executor output."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     stdout: str
     stderr: str
-    exit_code: int
+    exit_code: pydantic.conint(ge=0, le=255)  # type: ignore[valid-type]
 
 
 class _ProcessExecutor:

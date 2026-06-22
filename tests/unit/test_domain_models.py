@@ -30,7 +30,9 @@ class TestCheckModel:
             name="test_check",
             executor=models.Executor(command="echo"),
             parser=models.Parser(),
-            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.UptimeKumaPublisher(
+                url=pydantic.HttpUrl("https://my_url.net"), push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(),
         )
         assert check.name == "test_check"
@@ -48,7 +50,9 @@ class TestCheckModel:
                 command="/usr/local/bin/check_disk", args=["-w", "80%", "-c", "90%"], env={"PATH": "/usr/bin"}
             ),
             parser=models.Parser(),
-            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.UptimeKumaPublisher(
+                url=pydantic.HttpUrl("https://my_url.net"), push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(interval=30.5),
         )
         assert check.name == "full_check"
@@ -65,7 +69,7 @@ class TestCheckModel:
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
                 publisher=models.UptimeKumaPublisher(
-                    url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                    url=pydantic.HttpUrl("https://my_url.net"), push_token=pydantic.SecretStr("test_token")
                 ),
                 schedule=models.Schedule(interval=-1.0),
             )
@@ -80,7 +84,7 @@ class TestCheckModel:
                 executor=models.Executor(command="echo"),
                 parser=models.Parser(),
                 publisher=models.UptimeKumaPublisher(
-                    url="https://my_url.net", push_token=pydantic.SecretStr("test_token")
+                    url=pydantic.HttpUrl("https://my_url.net"), push_token=pydantic.SecretStr("test_token")
                 ),
                 schedule=models.Schedule(interval=0),
             )
@@ -93,7 +97,9 @@ class TestCheckModel:
             name="ser_check",
             executor=models.Executor(command="test", args=["arg1"], env={"KEY": "value"}),
             parser=models.Parser(),
-            publisher=models.UptimeKumaPublisher(url="https://my_url.net", push_token=pydantic.SecretStr("test_token")),
+            publisher=models.UptimeKumaPublisher(
+                url=pydantic.HttpUrl("https://my_url.net"), push_token=pydantic.SecretStr("test_token")
+            ),
             schedule=models.Schedule(interval=45),
         )
 
@@ -121,7 +127,7 @@ class TestPublisherModels:
     def test_create_uptime_kuma_missing_push_token(self) -> None:
         """Test that UptimeKumaPublisher requires push_token field."""
         with pytest.raises(pydantic.ValidationError, match="push_token"):
-            models.UptimeKumaPublisher(url="https://example.com")  # type: ignore[call-arg]
+            models.UptimeKumaPublisher(url=pydantic.HttpUrl("https://example.com"))  # type: ignore[call-arg]
 
     def test_discriminated_union_stdout(self) -> None:
         """Test that discriminated union works for stdout publisher."""
@@ -140,7 +146,7 @@ class TestPublisherModels:
             publisher={  # type: ignore[arg-type]
                 "name": "uptime_kuma",
                 "url": "https://example.com",
-                "push_token": "token",
+                "push_token": "test_token",
             },
         )
         assert isinstance(check.publisher, models.UptimeKumaPublisher)
@@ -150,8 +156,8 @@ class TestPublisherModels:
         check = models.Check(
             name="test",
             executor=models.Executor(command="echo"),
-            publisher={"url": "https://example.com", "push_token": "token"},  # type: ignore[arg-type]
+            publisher={"url": "https://example.com", "push_token": "test_token"},  # type: ignore[arg-type]
         )
         assert isinstance(check.publisher, models.UptimeKumaPublisher)
         assert check.publisher.name == "uptime_kuma"
-        assert check.publisher.url == "https://example.com"
+        assert str(check.publisher.url) == "https://example.com/"

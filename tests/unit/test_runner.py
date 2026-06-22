@@ -51,7 +51,7 @@ class TestRunner:
                 env={"TEST_ENV": "test"},
             ),
             publisher=models.UptimeKumaPublisher(
-                url="https://example.com",
+                url=pydantic.HttpUrl("https://example.com"),
                 push_token=pydantic.SecretStr("test-token"),
             ),
         )
@@ -109,6 +109,7 @@ class TestRunner:
         runner._publisher.publish.assert_awaited_once()  # type: ignore[attr-defined]
         publisher_args = runner._publisher.publish.await_args[1]["args"]  # type: ignore[attr-defined]
         assert publisher_args.id == sample_check.name
+        assert isinstance(sample_check.publisher, models.UptimeKumaPublisher)
         assert publisher_args.url == sample_check.publisher.url
         assert publisher_args.push_token.get_secret_value() == sample_check.publisher.push_token.get_secret_value()
         assert publisher_args.status == "up"

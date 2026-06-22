@@ -19,8 +19,10 @@ from pydantic import Field, model_validator
 class Executor(pydantic.BaseModel):
     """KumaCub Executor."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     name: Literal["process"] = "process"
-    command: str
+    command: str = pydantic.Field(min_length=1)
     args: list[str] = []
     env: dict[str, str] = {}
 
@@ -28,23 +30,27 @@ class Executor(pydantic.BaseModel):
 class Parser(pydantic.BaseModel):
     """KumaCub Parser."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     name: Literal["nagios"] = "nagios"
 
 
 class StdoutPublisher(pydantic.BaseModel):
     """Stdout Publisher."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     name: Literal["stdout"] = "stdout"
-    url: str = ""
-    push_token: pydantic.SecretStr = pydantic.SecretStr("")
 
 
 class UptimeKumaPublisher(pydantic.BaseModel):
     """Uptime Kuma Publisher."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     name: Literal["uptime_kuma"] = "uptime_kuma"
-    url: str
-    push_token: pydantic.SecretStr
+    url: pydantic.HttpUrl
+    push_token: pydantic.SecretStr = pydantic.Field(min_length=8)
 
 
 # Discriminated union allows Pydantic to select the correct publisher class
@@ -58,13 +64,17 @@ AnyPublisher: TypeAlias = Annotated[
 class Schedule(pydantic.BaseModel):
     """KumaCub Schedule."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     interval: pydantic.PositiveFloat = 60
 
 
 class Check(pydantic.BaseModel):
     """KumaCub Check."""
 
-    name: str
+    model_config = pydantic.ConfigDict(frozen=True)
+
+    name: str = pydantic.Field(min_length=1)
     executor: Executor
     parser: Parser = Parser()
     publisher: AnyPublisher

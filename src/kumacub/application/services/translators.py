@@ -52,7 +52,7 @@ def executor_to_parser(
             return parsers.NagiosParserArgs(
                 id=check_id,
                 output=output.stdout or output.stderr,
-                exit_code=output.exit_code,
+                exit_code=typing.cast("parsers.nagios.NagiosExitCode", output.exit_code),
             )
         case _:
             msg = f"No translator for {executor_name} executor -> {parser_name} parser"

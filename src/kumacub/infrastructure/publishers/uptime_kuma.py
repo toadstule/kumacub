@@ -19,8 +19,10 @@ import structlog
 class UptimeKumaPublishArgs(pydantic.BaseModel):
     """Arguments for the publisher."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     id: str
-    url: str
+    url: pydantic.HttpUrl
     push_token: pydantic.SecretStr
     status: Literal["", "down", "up"] = ""
     msg: str = pydantic.Field(default="", max_length=250)
@@ -36,7 +38,7 @@ class _UptimeKumaPublisher:
     async def publish(args: UptimeKumaPublishArgs) -> None:
         """Publish a check result to Uptime Kuma."""
         logger = structlog.get_logger().bind(id=args.id)
-        url = f"{args.url}/api/push/{args.push_token.get_secret_value()}"
+        url = f"{args.url}api/push/{args.push_token.get_secret_value()}"
         params = {
             k: v
             for k, v in args.model_dump(mode="json", exclude_none=True, exclude_unset=True).items()

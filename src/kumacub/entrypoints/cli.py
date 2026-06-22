@@ -166,13 +166,13 @@ class KumaCubCLI:
         """Run checks."""
         settings = config.get_settings()
         for check in settings.checks:
-            check.publisher.name = "stdout"  # Print check results to stdout
+            check_ = check.model_copy(update={"publisher": check.publisher.model_copy(update={"name": "stdout"})})
             runner_ = runner.Runner(
-                executor=executors.get_executor(check.executor.name),
-                parser=parsers.get_parser(check.parser.name),
-                publisher=publishers.get_publisher(check.publisher.name),
+                executor=executors.get_executor(check_.executor.name),
+                parser=parsers.get_parser(check_.parser.name),
+                publisher=publishers.get_publisher(check_.publisher.name),
             )
-            asyncio.run(runner_.run(check))
+            asyncio.run(runner_.run(check_))
 
 
 def main() -> None:

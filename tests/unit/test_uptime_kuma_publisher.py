@@ -32,7 +32,7 @@ class TestUptimeKumaPublisher:
         """Return sample publish args for testing."""
         return uptime_kuma.UptimeKumaPublishArgs(
             id="test-check",
-            url="http://ignored",
+            url=pydantic.HttpUrl("http://ignored"),
             push_token=pydantic.SecretStr("test-token"),
             status="up",
             msg="Test message",
@@ -45,7 +45,7 @@ class TestUptimeKumaPublisher:
     ) -> None:
         """Test successful publish."""
         with respx.mock() as mock:
-            mock.get(f"{publish_args.url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
+            mock.get(f"{publish_args.url}api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
             await uptime_kuma_publisher.publish(publish_args)
 
             # Verify the request was made with the correct parameters
@@ -63,7 +63,7 @@ class TestUptimeKumaPublisher:
     ) -> None:
         """Test publish with HTTP error that includes a message (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{publish_args.url}/api/push/test-token").respond(
+            mock.get(f"{publish_args.url}api/push/test-token").respond(
                 httpx.codes.NOT_FOUND, json={"ok": False, "msg": "Monitor not found or not active"}
             )
             await uptime_kuma_publisher.publish(publish_args)
@@ -77,7 +77,7 @@ class TestUptimeKumaPublisher:
     ) -> None:
         """Test publish with HTTP error that doesn't include a message (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{publish_args.url}/api/push/test-token").respond(
+            mock.get(f"{publish_args.url}api/push/test-token").respond(
                 httpx.codes.INTERNAL_SERVER_ERROR, json={"ok": False, "msg": "Internal server error"}
             )
             await uptime_kuma_publisher.publish(publish_args)
@@ -90,7 +90,7 @@ class TestUptimeKumaPublisher:
     ) -> None:
         """Test publish with request error (no exception raised)."""
         with respx.mock() as mock:
-            mock.get(f"{publish_args.url}/api/push/test-token").mock(side_effect=httpx.RequestError("Connection error"))
+            mock.get(f"{publish_args.url}api/push/test-token").mock(side_effect=httpx.RequestError("Connection error"))
             await uptime_kuma_publisher.publish(publish_args)
 
     @pytest.mark.parametrize(
@@ -114,14 +114,14 @@ class TestUptimeKumaPublisher:
             # Create parameters and make the request
             args = uptime_kuma.UptimeKumaPublishArgs(
                 id="test-check",
-                url="http://ignored",
+                url=pydantic.HttpUrl("http://ignored"),
                 push_token=pydantic.SecretStr("test-token"),
                 status=status,
                 msg=msg,
                 ping=ping,
             )
             # Mock the response using the URL from args
-            mock.get(f"{args.url}/api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
+            mock.get(f"{args.url}api/push/test-token").respond(httpx.codes.OK, json={"ok": True})
             await uptime_kuma_publisher.publish(args)
 
             # Get the request that was made

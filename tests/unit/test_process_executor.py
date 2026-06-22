@@ -110,7 +110,7 @@ class TestProcessExecutor:
     ) -> None:
         """Test running a command with environment variables."""
         monkeypatch.setenv("TEST_VAR", "test_value")
-        exec_success.env = {"CUSTOM_VAR": "custom_value"}
+        exec_success = exec_success.model_copy(update={"env": {"CUSTOM_VAR": "custom_value"}})
 
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()

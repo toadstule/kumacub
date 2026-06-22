@@ -92,8 +92,8 @@ class TestParserToPublisher:
             name="test-check",
             executor=models.Executor(command="echo", args=["test"]),
             publisher=models.UptimeKumaPublisher(
-                url="https://example.com",
-                push_token=pydantic.SecretStr("token"),
+                url=pydantic.HttpUrl("https://example.com"),
+                push_token=pydantic.SecretStr("test_token"),
             ),
         )
 

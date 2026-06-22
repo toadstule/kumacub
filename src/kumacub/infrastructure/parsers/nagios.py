@@ -16,20 +16,26 @@ from typing import ClassVar, Final, Literal
 import pydantic
 import structlog
 
+NagiosExitCode = Literal[0, 1, 2, 3]
+
 
 class NagiosParserArgs(pydantic.BaseModel):
     """Nagios-style check args."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     id: str
-    exit_code: int
+    exit_code: NagiosExitCode
     output: str
 
 
 class NagiosParserOutput(pydantic.BaseModel):
     """Nagios-style check output."""
 
+    model_config = pydantic.ConfigDict(frozen=True)
+
     service_state: Literal["OK", "WARNING", "CRITICAL", "UNKNOWN"]
-    exit_code: int
+    exit_code: NagiosExitCode
     service_output: str
     long_service_output: str
     service_performance_data: str

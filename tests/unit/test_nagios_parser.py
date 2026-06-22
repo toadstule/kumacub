@@ -27,10 +27,9 @@ class TestNagiosParser:
             (1, "WARNING"),
             (2, "CRITICAL"),
             (3, "UNKNOWN"),
-            (99, "UNKNOWN"),  # Unknown exit code
         ],
     )
-    def test_exit_code_mapping(self, exit_code: int, expected_state: str) -> None:
+    def test_exit_code_mapping(self, exit_code: parsers.nagios.NagiosExitCode, expected_state: str) -> None:
         """Test that exit codes are correctly mapped to service states."""
         result = cast(
             "parsers.NagiosParserOutput",
