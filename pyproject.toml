@@ -4,15 +4,15 @@ requires = ["uv_build<0.12"]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.18.2",
-    "pytest>=8.4.2",
-    "pytest-asyncio>=1.2.0",
+    "mypy>=2.1.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.0.0",
     "respx>=0.22.0",
-    "ruff>=0.14.4",
-    "types-pyyaml>=6.0.12.20250915",
+    "ruff>=0.15.18",
+    "types-pyyaml>=6.0.12.20260518",
     "types-ujson>=5.10.0.20250822",
-    "uv-build",
+    "uv-build>=0.11.13",
 ]
 
 [project]
@@ -31,9 +31,9 @@ description = "Run local Nagios-compatible checks; push results to Uptime Kuma"
 dependencies = [
     "apscheduler>=3.11.1",
     "httpx>=0.28.1",
-    "pydantic>=2.12.4",
-    "pydantic-settings>=2.11.0",
-    "structlog>=25.5.0",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "structlog>=26.1.0",
 ]
 keywords = ["nagios", "Uptime Kuma"]
 license = "GPL-3.0-only"
@@ -41,7 +41,7 @@ license-files = ["LICENSE"]
 name = "kumacub"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "0.7.0"
+version = "0.8.0"
 
 [project.scripts]
 kumacub = "kumacub.entrypoints.cli:main"
